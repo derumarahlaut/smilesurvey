@@ -4,7 +4,7 @@
 import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
 import { allQuestions } from '@/lib/survey-data';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format } from 'date-fns';
@@ -13,11 +13,10 @@ import { format } from 'date-fns';
 async function getNextPatientSequence(idPrefix: string): Promise<string> {
   const patientsRef = collection(db, "patients");
   
-  // Query to find documents with the same ID prefix
   const q = query(
     patientsRef,
     where('exam-id', '>=', idPrefix),
-    where('exam-id', '<', idPrefix + 'z'), // 'z' is a high character to effectively create a "startsWith" query
+    where('exam-id', '<', idPrefix + 'z'),
     orderBy('exam-id', 'desc'),
     limit(1)
   );
@@ -25,10 +24,8 @@ async function getNextPatientSequence(idPrefix: string): Promise<string> {
   const querySnapshot = await getDocs(q);
   
   if (querySnapshot.empty) {
-    // No existing patients for this prefix, start with 1
     return "001";
   } else {
-    // Get the last exam-id and increment the sequence
     const lastExamId = querySnapshot.docs[0].id;
     const parts = lastExamId.split('-');
     const lastSequence = parseInt(parts[parts.length - 1], 10);
@@ -37,7 +34,6 @@ async function getNextPatientSequence(idPrefix: string): Promise<string> {
   }
 }
 
-// Helper to get question text by ID
 const getQuestionText = (id: string) => {
   const question = allQuestions.find(q => q.id === id);
   return question ? question.question : id;
@@ -48,15 +44,12 @@ function processFormData(formData: Record<string, any>) {
 
   const { 'odontogram-chart': odontogramChartData, ...regularFormData } = formData;
   
-  // Process regular form data
   for (const id in regularFormData) {
-    // Check for null or undefined, but allow other "falsy" values like 0, false, ""
     if (regularFormData[id] !== null && regularFormData[id] !== undefined) { 
       surveyResponses[getQuestionText(id)] = regularFormData[id];
     }
   }
   
-  // Process and flatten odontogram data
   if (odontogramChartData) {
     const clinicalCheck: Record<string, any> = {};
     const toothStatus: Record<string, string> = {};
@@ -80,12 +73,9 @@ function processFormData(formData: Record<string, any>) {
       }
     }
 
-    // Calculate scores and add to responses
     const dmf = { D: 0, M: 0, F: 0 };
     const def = { d: 0, e: 0, f: 0 };
     
-    // DMF-T Calculation (Gigi Tetap)
-    // D = Decay (1, 2), M = Missing (4), F = Filling (3)
     allAdultTeethIds.forEach(id => {
         const status = odontogramChartData[`tooth-${id}`];
         if (status === '1' || status === '2') dmf.D++;
@@ -93,8 +83,6 @@ function processFormData(formData: Record<string, any>) {
         if (status === '3') dmf.F++;
     });
     
-    // def-t Calculation (Gigi Sulung)
-    // d = decay (B, C), e = evoliation/extracted (E), f = filling (D)
     allChildTeethIds.forEach(id => {
         const status = odontogramChartData[`tooth-${id}`];
         if (status === 'B' || status === 'C') def.d++;
@@ -105,14 +93,12 @@ function processFormData(formData: Record<string, any>) {
     surveyResponses['DMF-T Score'] = `D: ${dmf.D}, M: ${dmf.M}, F: ${dmf.F}, Total: ${dmf.D + dmf.M + dmf.F}`;
     surveyResponses['def-t Score'] = `d: ${def.d}, e: ${def.e}, f: ${def.f}, Total: ${def.d + def.e + def.f}`;
 
-    // Add tooth statuses for non-healthy teeth only
     for (const toothId in toothStatus) {
         if (toothStatus[toothId] && toothStatus[toothId] !== '0' && toothStatus[toothId] !== 'A') {
             surveyResponses[`Status Gigi ${toothId.replace('tooth-','')}`] = toothStatus[toothId];
         }
     }
     
-    // Add other clinical checks to the main response object
     if (clinicalCheck.bleedingGums) surveyResponses['Gusi berdarah'] = clinicalCheck.bleedingGums === '1' ? 'Ya' : 'Tidak';
     if (clinicalCheck.oralLesion) surveyResponses['Lesi Mukosa Oral'] = clinicalCheck.oralLesion === '1' ? 'Ya' : 'Tidak';
     if (clinicalCheck.treatmentNeed) {
@@ -135,47 +121,53 @@ function processFormData(formData: Record<string, any>) {
   return surveyResponses;
 }
 
-export async function saveSurvey(formData: Record<string, any>) {
+export async function saveSurvey(formData: Record<string, any>, existingExamId?: string) {
   try {
     const dataToSave = { ...formData };
-    
-    // --- Automatic ID Generation ---
-    const provinceName = dataToSave['province'];
-    const cityName = dataToSave['city'];
-    const examDate = dataToSave['exam-date'] ? new Date(dataToSave['exam-date']) : new Date();
+    let fullExamId = existingExamId;
 
-    if (!provinceName || !cityName) {
-        return { error: 'Provinsi dan Kota/Kabupaten harus diisi untuk membuat Nomor Urut.' };
+    if (!fullExamId) {
+      const provinceName = dataToSave['province'];
+      const cityName = dataToSave['city'];
+      let examDate;
+      if (dataToSave['exam-date'] instanceof Date) {
+        examDate = dataToSave['exam-date'];
+      } else if (typeof dataToSave['exam-date'] === 'string') {
+        examDate = new Date(dataToSave['exam-date']);
+      } else {
+        examDate = new Date();
+      }
+  
+      if (!provinceName || !cityName) {
+          return { error: 'Provinsi dan Kota/Kabupaten harus diisi untuk membuat Nomor Urut.' };
+      }
+  
+      const provinceData = provinces.find(p => p.name === provinceName);
+      if (!provinceData) {
+         return { error: `Provinsi tidak ditemukan: ${provinceName}` };
+      }
+      const provinceCode = String(provinces.indexOf(provinceData) + 1).padStart(2, '0');
+      
+      const cityIndex = provinceData.cities.indexOf(cityName);
+      if (cityIndex === -1) {
+         return { error: `Kota/Kabupaten tidak ditemukan: ${cityName}` };
+      }
+      const cityCode = String(cityIndex + 1).padStart(2, '0');
+  
+      const dateCode = format(examDate, 'yyyyMMdd');
+      const idPrefix = `${provinceCode}-${cityCode}-${dateCode}-`;
+      const sequence = await getNextPatientSequence(idPrefix);
+      fullExamId = `${idPrefix}${sequence}`;
+      dataToSave['exam-id'] = fullExamId;
     }
 
-    const provinceData = provinces.find(p => p.name === provinceName);
-    if (!provinceData) {
-       return { error: `Provinsi tidak ditemukan: ${provinceName}` };
+    if (dataToSave['exam-date'] instanceof Date) {
+      dataToSave['exam-date'] = format(dataToSave['exam-date'], 'yyyy-MM-dd');
     }
-    const provinceCode = String(provinces.indexOf(provinceData) + 1).padStart(2, '0');
-    
-    const cityIndex = provinceData.cities.indexOf(cityName);
-    if (cityIndex === -1) {
-       return { error: `Kota/Kabupaten tidak ditemukan: ${cityName}` };
-    }
-    const cityCode = String(cityIndex + 1).padStart(2, '0');
 
-    const dateCode = format(examDate, 'yyyyMMdd');
-    const idPrefix = `${provinceCode}-${cityCode}-${dateCode}-`;
-    const sequence = await getNextPatientSequence(idPrefix);
-    const fullExamId = `${idPrefix}${sequence}`;
-    
-    dataToSave['exam-id'] = fullExamId;
-    // --- End of Automatic ID Generation ---
-
-    // Robustly convert exam-date to a string
-    dataToSave['exam-date'] = dateCode;
-
-    // Robustly convert birth-date to a string
     if (dataToSave['birth-date'] && typeof dataToSave['birth-date'] === 'object') {
         const { day, month, year } = dataToSave['birth-date'];
         if (day && month && year && !isNaN(parseInt(year)) && !isNaN(parseInt(month)) && !isNaN(parseInt(day))) {
-            // Month in JS Date is 0-indexed, so subtract 1
             const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
             if (!isNaN(date.getTime())) {
               dataToSave['birth-date'] = date.toISOString().split('T')[0];
@@ -187,7 +179,12 @@ export async function saveSurvey(formData: Record<string, any>) {
         }
     } else if (dataToSave['birth-date']) {
        try {
-        dataToSave['birth-date'] = new Date(dataToSave['birth-date']).toISOString().split('T')[0];
+        const date = new Date(dataToSave['birth-date']);
+        if (!isNaN(date.getTime())) {
+          dataToSave['birth-date'] = date.toISOString().split('T')[0];
+        } else {
+           delete dataToSave['birth-date'];
+        }
       } catch (e) {
         delete dataToSave['birth-date'];
       }
@@ -195,9 +192,9 @@ export async function saveSurvey(formData: Record<string, any>) {
         delete dataToSave['birth-date'];
     }
 
-
-    await setDoc(doc(db, "patients", fullExamId), dataToSave);
+    await setDoc(doc(db, "patients", fullExamId!), dataToSave, { merge: true });
     revalidatePath('/master');
+    revalidatePath(`/master/${fullExamId}/edit`);
     return { success: true, examId: fullExamId };
   } catch (error: any) {
     console.error("Error saving survey:", error);
@@ -206,8 +203,6 @@ export async function saveSurvey(formData: Record<string, any>) {
 }
 
 
-// This function is currently not used on the main survey page, 
-// but is kept for potential use in a future dashboard/reporting page.
 export async function submitSurveyForTips(formData: Record<string, any>) {
   try {
     const surveyResponses = processFormData(formData);
@@ -238,5 +233,30 @@ export async function deletePatient(examId: string) {
   } catch (error) {
     console.error("Error deleting patient:", error);
     return { error: 'Gagal menghapus data pasien.' };
+  }
+}
+
+export async function getPatient(examId: string) {
+  try {
+    const docRef = doc(db, "patients", examId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Convert date strings back to Date objects for the form
+      if (data['exam-date']) {
+          data['exam-date'] = new Date(data['exam-date']);
+      }
+      if (data['birth-date']) {
+          const [year, month, day] = data['birth-date'].split('-').map(Number);
+          data['birth-date'] = { day: String(day), month: String(month), year: String(year) };
+      }
+      return { success: true, patient: data };
+    } else {
+      return { error: "Pasien tidak ditemukan." };
+    }
+  } catch (error: any) {
+    console.error("Error fetching patient:", error);
+    return { error: `Gagal mengambil data pasien: ${error.message}` };
   }
 }

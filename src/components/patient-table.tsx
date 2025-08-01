@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, Trash2, Loader2 } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, Trash2, Loader2, Pencil } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
@@ -101,8 +101,12 @@ const ActionCell = ({ row }: { row: any }) => {
             Salin ID
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Lihat Pasien</DropdownMenuItem>
-          <DropdownMenuItem>Edit Pasien</DropdownMenuItem>
+          <DropdownMenuItem>
+            <Link href={`/master/${patient.examId}/edit`} className="flex items-center w-full">
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit Pasien
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="text-destructive focus:text-destructive focus:bg-destructive/10"
             onClick={() => setIsAlertOpen(true)}
