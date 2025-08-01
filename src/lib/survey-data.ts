@@ -57,10 +57,16 @@ export const sections: Section[] = [
         sectionId: 'patient-identity',
       },
       {
-        id: 'birth-info',
-        question: 'Tempat, Tanggal Lahir',
+        id: 'birth-place',
+        question: 'Tempat Lahir',
         type: 'text',
-        placeholder: 'Contoh: Bandung, 17 Agustus 1990',
+        placeholder: 'Contoh: Bandung',
+        sectionId: 'patient-identity',
+      },
+       {
+        id: 'birth-date',
+        question: 'Tanggal Lahir',
+        type: 'date',
         sectionId: 'patient-identity',
       },
       {
