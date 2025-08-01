@@ -4,8 +4,38 @@
 import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
 import { allQuestions } from '@/lib/survey-data';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
+import { provinces } from '@/lib/location-data';
+import { format } from 'date-fns';
+
+
+async function getNextPatientSequence(idPrefix: string): Promise<string> {
+  const patientsRef = collection(db, "patients");
+  
+  // Query to find documents with the same ID prefix
+  const q = query(
+    patientsRef,
+    where('exam-id', '>=', idPrefix),
+    where('exam-id', '<', idPrefix + 'z'), // 'z' is a high character to effectively create a "startsWith" query
+    orderBy('exam-id', 'desc'),
+    limit(1)
+  );
+
+  const querySnapshot = await getDocs(q);
+  
+  if (querySnapshot.empty) {
+    // No existing patients for this prefix, start with 1
+    return "001";
+  } else {
+    // Get the last exam-id and increment the sequence
+    const lastExamId = querySnapshot.docs[0].id;
+    const parts = lastExamId.split('-');
+    const lastSequence = parseInt(parts[parts.length - 1], 10);
+    const nextSequence = lastSequence + 1;
+    return String(nextSequence).padStart(3, '0');
+  }
+}
 
 // Helper to get question text by ID
 const getQuestionText = (id: string) => {
@@ -106,23 +136,40 @@ function processFormData(formData: Record<string, any>) {
 }
 
 export async function saveSurvey(formData: Record<string, any>) {
-  const examId = formData['exam-id'];
-  if (!examId) {
-    return { error: 'Nomor Urut tidak boleh kosong.' };
-  }
-
   try {
     const dataToSave = { ...formData };
     
-    // Robustly convert exam-date to a string
-    if (dataToSave['exam-date']) {
-      try {
-        dataToSave['exam-date'] = new Date(dataToSave['exam-date']).toISOString().split('T')[0];
-      } catch (e) {
-        // if conversion fails, it might be an invalid date, so we remove it
-        delete dataToSave['exam-date'];
-      }
+    // --- Automatic ID Generation ---
+    const provinceName = dataToSave['province'];
+    const cityName = dataToSave['city'];
+    const examDate = dataToSave['exam-date'] ? new Date(dataToSave['exam-date']) : new Date();
+
+    if (!provinceName || !cityName) {
+        return { error: 'Provinsi dan Kota/Kabupaten harus diisi untuk membuat Nomor Urut.' };
     }
+
+    const provinceData = provinces.find(p => p.name === provinceName);
+    if (!provinceData) {
+       return { error: `Provinsi tidak ditemukan: ${provinceName}` };
+    }
+    const provinceCode = String(provinces.indexOf(provinceData) + 1).padStart(2, '0');
+    
+    const cityIndex = provinceData.cities.indexOf(cityName);
+    if (cityIndex === -1) {
+       return { error: `Kota/Kabupaten tidak ditemukan: ${cityName}` };
+    }
+    const cityCode = String(cityIndex + 1).padStart(2, '0');
+
+    const dateCode = format(examDate, 'yyyyMMdd');
+    const idPrefix = `${provinceCode}-${cityCode}-${dateCode}-`;
+    const sequence = await getNextPatientSequence(idPrefix);
+    const fullExamId = `${idPrefix}${sequence}`;
+    
+    dataToSave['exam-id'] = fullExamId;
+    // --- End of Automatic ID Generation ---
+
+    // Robustly convert exam-date to a string
+    dataToSave['exam-date'] = dateCode;
 
     // Robustly convert birth-date to a string
     if (dataToSave['birth-date'] && typeof dataToSave['birth-date'] === 'object') {
@@ -130,31 +177,28 @@ export async function saveSurvey(formData: Record<string, any>) {
         if (day && month && year && !isNaN(parseInt(year)) && !isNaN(parseInt(month)) && !isNaN(parseInt(day))) {
             // Month in JS Date is 0-indexed, so subtract 1
             const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            // Check if the created date is valid
             if (!isNaN(date.getTime())) {
               dataToSave['birth-date'] = date.toISOString().split('T')[0];
             } else {
-              delete dataToSave['birth-date']; // Invalid date components
+              delete dataToSave['birth-date'];
             }
         } else {
-             delete dataToSave['birth-date']; // Incomplete date components
+             delete dataToSave['birth-date'];
         }
     } else if (dataToSave['birth-date']) {
-      // It might be an already stringified date, just ensure format is correct
        try {
         dataToSave['birth-date'] = new Date(dataToSave['birth-date']).toISOString().split('T')[0];
       } catch (e) {
         delete dataToSave['birth-date'];
       }
     } else {
-        // Ensure birth-date field is removed if it's null/undefined/empty
         delete dataToSave['birth-date'];
     }
 
 
-    await setDoc(doc(db, "patients", examId), dataToSave);
+    await setDoc(doc(db, "patients", fullExamId), dataToSave);
     revalidatePath('/master');
-    return { success: true, examId };
+    return { success: true, examId: fullExamId };
   } catch (error: any) {
     console.error("Error saving survey:", error);
     return { error: `Gagal menyimpan data ke database: ${error.message}` };

@@ -116,8 +116,6 @@ const createSchema = () => {
     return acc;
   }, {} as Record<string, z.ZodType<any, any>>);
   
-  // Add exam-id-suffix
-  schemaObject['exam-id-suffix'] = z.string().min(1, 'Nomor urut pasien harus diisi');
 
   // Make all fields optional for single page submit
   return z.object(schemaObject).partial();
@@ -226,12 +224,9 @@ export function SurveyForm() {
   
   const onSubmit = async (data: SurveyFormData) => {
     setIsSubmitting(true);
-
-    const fullExamId = `${examIdPrefix}${data['exam-id-suffix']}`;
-    const dataToSave = { ...data, 'exam-id': fullExamId };
-    delete dataToSave['exam-id-suffix'];
     
-    const result = await saveSurvey(dataToSave);
+    // We pass the raw form data to the server action
+    const result = await saveSurvey(data);
     setIsSubmitting(false);
 
     if (result.error) {
@@ -273,15 +268,16 @@ export function SurveyForm() {
   useEffect(() => {
     const provinceIndex = provinces.findIndex(p => p.name === selectedProvince);
     const provinceCode = provinceIndex > -1 ? String(provinceIndex + 1).padStart(2, '0') : 'XX';
-
-    const cityIndex = cities.findIndex(c => c === selectedCity);
+    
+    const cityList = getCitiesByProvince(selectedProvince);
+    const cityIndex = cityList.findIndex(c => c === selectedCity);
     const cityCode = cityIndex > -1 ? String(cityIndex + 1).padStart(2, '0') : 'XX';
     
     const dateCode = examDate ? format(examDate, 'yyyyMMdd') : 'YYYYMMDD';
 
     setExamIdPrefix(`${provinceCode}-${cityCode}-${dateCode}-`);
 
-  }, [selectedProvince, selectedCity, examDate, cities]);
+  }, [selectedProvince, selectedCity, examDate]);
   
   const FormField = ({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) => {
       const question = allQuestions.find(q => q.id === id);
@@ -376,24 +372,12 @@ export function SurveyForm() {
                   <FormField id="exam-id">
                     <div className="flex items-center gap-2">
                         <Input 
-                            value={examIdPrefix}
+                            value={`${examIdPrefix}XXX`}
                             readOnly 
                             className="flex-grow bg-muted"
                         />
-                        <Controller 
-                            name="exam-id-suffix" 
-                            control={form.control} 
-                            render={({ field }) => (
-                                <Input 
-                                    {...field}
-                                    id="exam-id-suffix" 
-                                    placeholder="001" 
-                                    className="w-24" 
-                                />
-                            )}
-                        />
                     </div>
-                     {form.formState.errors['exam-id-suffix'] && <p className="text-sm font-medium text-destructive">{form.formState.errors['exam-id-suffix'].message}</p>}
+                     <p className="text-sm text-muted-foreground mt-1">Nomor urut pasien (XXX) akan dibuat otomatis saat disimpan.</p>
                   </FormField>
                 </div>
           </div>
