@@ -12,6 +12,9 @@ export const allQuestions: Question[] = [
     { id: 'exam-id', question: 'Nomor Urut', type: 'number' },
     { id: 'province', question: 'Provinsi', type: 'select' },
     { id: 'city', question: 'Kota/Kabupaten', type: 'select' },
+    { id: 'agency', question: 'Instansi Penyelenggara Survey', type: 'text' },
+    { id: 'examiner', question: 'Nama Pemeriksa', type: 'text' },
+    { id: 'recorder', question: 'Nama Pencatat', type: 'text' },
     { id: 'name', question: 'Nama Pasien', type: 'text' },
     { id: 'village', question: 'Desa/Kelurahan/Kecamatan', type: 'text' },
     {

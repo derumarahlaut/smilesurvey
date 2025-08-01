@@ -176,6 +176,7 @@ export function SurveyForm() {
     defaultValues: {
       ...allQuestions.reduce((acc, q) => ({...acc, [q.id]: undefined}), {}),
       province: 'Jawa Barat',
+      agency: 'Dinas Kesehatan Provinsi Jawa Barat',
       'odontogram-chart': defaultOdontogram,
     }
   });
@@ -247,6 +248,17 @@ export function SurveyForm() {
                     />
                   )}
                 />
+              </FormField>
+          </div>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <FormField id="agency">
+                 <Controller name="agency" control={form.control} render={({ field }) => <Input {...field} id="agency" />} />
+              </FormField>
+              <FormField id="examiner">
+                 <Controller name="examiner" control={form.control} render={({ field }) => <Input {...field} id="examiner" />} />
+              </FormField>
+               <FormField id="recorder">
+                 <Controller name="recorder" control={form.control} render={({ field }) => <Input {...field} id="recorder" />} />
               </FormField>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
