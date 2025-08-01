@@ -39,7 +39,7 @@ const adultTeeth = {
 const childTeeth = {
     upperRight: [55, 54, 53, 52, 51],
     upperLeft: [61, 62, 63, 64, 65],
-    lowerLeft: [75, 74, 73, 72, 71],
+    lowerLeft: [71, 72, 73, 74, 75],
     lowerRight: [81, 82, 83, 84, 85],
 };
 
