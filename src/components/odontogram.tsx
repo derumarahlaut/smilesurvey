@@ -33,14 +33,14 @@ const adultTeeth = {
   upperRight: [18, 17, 16, 15, 14, 13, 12, 11],
   upperLeft: [21, 22, 23, 24, 25, 26, 27, 28],
   lowerLeft: [31, 32, 33, 34, 35, 36, 37, 38],
-  lowerRight: [41, 42, 43, 44, 45, 46, 47, 48],
+  lowerRight: [48, 47, 46, 45, 44, 43, 42, 41],
 };
 
 const childTeeth = {
     upperRight: [55, 54, 53, 52, 51],
     upperLeft: [61, 62, 63, 64, 65],
     lowerLeft: [71, 72, 73, 74, 75],
-    lowerRight: [81, 82, 83, 84, 85],
+    lowerRight: [85, 84, 83, 82, 81],
 };
 
 const allAdultTeethIds = Object.values(adultTeeth).flat();
@@ -70,9 +70,15 @@ const ToothSelect = ({ control, name, label, type = 'permanent' }: { control: an
   </div>
 );
 
-const ToothRow = ({ control, teeth, type = 'permanent' } : { control: any, teeth: number[], type?: 'permanent' | 'primary'}) => (
-    <div className="flex justify-center gap-1">
-        {teeth.map(tooth => <ToothSelect key={tooth} control={control} name={`tooth-${tooth}`} label={String(tooth)} type={type} />)}
+const ToothRow = ({ control, teethRight, teethLeft, type = 'permanent' } : { control: any, teethRight: number[], teethLeft: number[], type?: 'permanent' | 'primary'}) => (
+    <div className="flex justify-center items-center gap-1">
+        <div className="flex justify-end flex-1 gap-1">
+            {teethRight.map(tooth => <ToothSelect key={tooth} control={control} name={`tooth-${tooth}`} label={String(tooth)} type={type} />)}
+        </div>
+        <div className="w-px h-12 bg-black mx-1"></div>
+        <div className="flex justify-start flex-1 gap-1">
+            {teethLeft.map(tooth => <ToothSelect key={tooth} control={control} name={`tooth-${tooth}`} label={String(tooth)} type={type} />)}
+        </div>
     </div>
 );
 
@@ -162,11 +168,11 @@ export function Odontogram({ form }: { form: any }) {
             <span>RA Kanan</span>
             <span>RA Kiri</span>
           </div>
-          <ToothRow control={control} teeth={[...adultTeeth.upperRight.slice().reverse(), ...adultTeeth.upperLeft]} type="permanent" />
-          <ToothRow control={control} teeth={[...childTeeth.upperRight.slice().reverse(), ...childTeeth.upperLeft]} type="primary" />
+          <ToothRow control={control} teethRight={adultTeeth.upperRight} teethLeft={adultTeeth.upperLeft} type="permanent" />
+          <ToothRow control={control} teethRight={childTeeth.upperRight} teethLeft={childTeeth.upperLeft} type="primary" />
           <div className="border-t-2 border-black my-2"></div>
-          <ToothRow control={control} teeth={[...childTeeth.lowerRight.slice().reverse(), ...childTeeth.lowerLeft]} type="primary" />
-          <ToothRow control={control} teeth={[...adultTeeth.lowerRight.slice().reverse(), ...adultTeeth.lowerLeft]} type="permanent" />
+          <ToothRow control={control} teethRight={childTeeth.lowerRight} teethLeft={childTeeth.lowerLeft} type="primary" />
+          <ToothRow control={control} teethRight={adultTeeth.lowerRight} teethLeft={adultTeeth.lowerLeft} type="permanent" />
           <div className="flex justify-between text-sm font-bold px-4">
             <span>RB Kanan</span>
             <span>RB Kiri</span>
