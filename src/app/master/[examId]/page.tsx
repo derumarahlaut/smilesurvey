@@ -89,7 +89,7 @@ const VerificationDialog = ({ examId, patient, onVerifySuccess }: { examId: stri
                 title: 'Verifikasi Berhasil',
                 description: `Data pasien ${examId} telah diverifikasi oleh ${verifierName}.`,
             });
-            onVerifySuccess(); // Panggil callback untuk memuat ulang data
+            onVerifySuccess();
         }
     };
 
@@ -362,12 +362,14 @@ export default function ViewPatientPage() {
                       Kembali
                    </Button>
                 </Link>
-                <Link href={`/master/${examId}/edit`} passHref className="flex-1">
-                   <Button className="w-full">
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit Data
-                   </Button>
-                </Link>
+                {!patient.verifiedAt && (
+                  <Link href={`/master/${examId}/edit`} passHref className="flex-1">
+                    <Button className="w-full">
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit Data
+                    </Button>
+                  </Link>
+                )}
              </div>
          </CardFooter>
       )
