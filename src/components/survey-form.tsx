@@ -190,6 +190,7 @@ export function SurveyForm() {
     resolver: zodResolver(surveySchema),
     defaultValues: {
       ...allQuestions.reduce((acc, q) => ({...acc, [q.id]: undefined}), {}),
+      'patient-category': 'Umum',
       province: 'Jawa Barat',
       agency: 'Dinas Kesehatan Provinsi Jawa Barat',
       'odontogram-chart': defaultOdontogram,
@@ -200,6 +201,8 @@ export function SurveyForm() {
   const selectedProvince = form.watch('province');
   const selectedCity = form.watch('city');
   const examDate = form.watch('exam-date');
+  const patientCategory = form.watch('patient-category');
+  
   const [cities, setCities] = useState<string[]>([]);
 
   useEffect(() => {
@@ -329,40 +332,149 @@ export function SurveyForm() {
                  <Controller name="exam-id" control={form.control} render={({ field }) => <Input {...field} id="exam-id" readOnly className="bg-gray-100" />} />
               </FormField>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField id="name">
-                 <Controller name="name" control={form.control} render={({ field }) => <Input {...field} id="name" />} />
-              </FormField>
-              <FormField id="village">
-                 <Controller name="village" control={form.control} render={({ field }) => <Input {...field} id="village" />} />
-              </FormField>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField id="occupation">
+          
+           <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField id="patient-category">
                 <Controller
-                    name="occupation"
+                    name="patient-category"
                     control={form.control}
                     render={({ field }) => (
                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <SelectTrigger>
-                              <SelectValue placeholder="Pilih Pekerjaan..." />
+                              <SelectValue placeholder="Pilih Kategori Pasien..." />
                           </SelectTrigger>
                           <SelectContent>
-                              {(allQuestions.find(q => q.id === 'occupation')?.options || []).map(opt => (
+                              {(allQuestions.find(q => q.id === 'patient-category')?.options || []).map(opt => (
                                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                               ))}
                           </SelectContent>
                       </Select>
                     )} />
             </FormField>
-            <FormField id="address">
-               <Controller name="address" control={form.control} render={({ field }) => <Input {...field} id="address" />} />
-            </FormField>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField id="birth-date">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField id="name">
+                 <Controller name="name" control={form.control} render={({ field }) => <Input {...field} id="name" />} />
+              </FormField>
+               <FormField id="birth-date">
                 <DateOfBirthInput control={form.control} name="birth-date" />
             </FormField>
+          </div>
+
+          {patientCategory === 'Siswa sekolah dasar (SD)' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField id="school-name">
+                     <Controller name="school-name" control={form.control} render={({ field }) => <Input {...field} id="school-name" />} />
+                  </FormField>
+                  <FormField id="class-level">
+                    <Controller
+                        name="class-level"
+                        control={form.control}
+                        render={({ field }) => (
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="Pilih Kelas..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {(allQuestions.find(q => q.id === 'class-level')?.options || []).map(opt => (
+                                     <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                        )} />
+                </FormField>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField id="parent-occupation">
+                    <Controller
+                        name="parent-occupation"
+                        control={form.control}
+                        render={({ field }) => (
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="Pilih Pekerjaan Orang Tua..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {(allQuestions.find(q => q.id === 'parent-occupation')?.options || []).map(opt => (
+                                     <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                        )} />
+                </FormField>
+                 <FormField id="parent-education">
+                    <Controller
+                        name="parent-education"
+                        control={form.control}
+                        render={({ field }) => (
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger>
+                                  <SelectValue placeholder="Pilih Pendidikan Orang Tua..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {(allQuestions.find(q => q.id === 'parent-education')?.options || []).map(opt => (
+                                     <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                        )} />
+                </FormField>
+              </div>
+            </>
+          )}
+
+          {patientCategory === 'Umum' && (
+            <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField id="village">
+                     <Controller name="village" control={form.control} render={({ field }) => <Input {...field} id="village" />} />
+                  </FormField>
+                   <FormField id="occupation">
+                        <Controller
+                            name="occupation"
+                            control={form.control}
+                            render={({ field }) => (
+                               <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder="Pilih Pekerjaan..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      {(allQuestions.find(q => q.id === 'occupation')?.options || []).map(opt => (
+                                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                            )} />
+                    </FormField>
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField id="address">
+                       <Controller name="address" control={form.control} render={({ field }) => <Input {...field} id="address" />} />
+                    </FormField>
+                    <FormField id="education">
+                        <Controller
+                            name="education"
+                            control={form.control}
+                            render={({ field }) => (
+                               <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder="Pilih Pendidikan..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      {(allQuestions.find(q => q.id === 'education')?.options || []).map(opt => (
+                                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                            )} />
+                    </FormField>
+                </div>
+            </>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
              <FormField id="gender">
                 <Controller
                     name="gender"
@@ -375,23 +487,6 @@ export function SurveyForm() {
                           <SelectContent>
                              <SelectItem value="1">Laki-laki</SelectItem>
                              <SelectItem value="2">Perempuan</SelectItem>
-                          </SelectContent>
-                      </Select>
-                    )} />
-            </FormField>
-            <FormField id="education">
-                <Controller
-                    name="education"
-                    control={form.control}
-                    render={({ field }) => (
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <SelectTrigger>
-                              <SelectValue placeholder="Pilih Pendidikan..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                              {(allQuestions.find(q => q.id === 'education')?.options || []).map(opt => (
-                                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                              ))}
                           </SelectContent>
                       </Select>
                     )} />

@@ -16,6 +16,12 @@ export const allQuestions: Question[] = [
     { id: 'agency', question: 'Instansi Penyelenggara Survey', type: 'text' },
     { id: 'examiner', question: 'Nama Pemeriksa', type: 'text' },
     { id: 'recorder', question: 'Nama Pencatat', type: 'text' },
+    {
+      id: 'patient-category',
+      question: 'Kategori Pasien',
+      type: 'select',
+      options: ['Siswa sekolah dasar (SD)', 'Umum'],
+    },
     { id: 'name', question: 'Nama Pasien', type: 'text' },
     { id: 'village', question: 'Desa/Kelurahan/Kecamatan', type: 'text' },
     {
@@ -30,6 +36,26 @@ export const allQuestions: Question[] = [
     {
       id: 'education',
       question: 'Pendidikan Terakhir',
+      type: 'select',
+      options: ['SD', 'SMP', 'SMA', 'Diploma', 'Sarjana', 'S2', 'S3', 'Lainnya'],
+    },
+    // School-specific fields
+    { id: 'school-name', question: 'Nama Sekolah', type: 'text' },
+    {
+      id: 'class-level',
+      question: 'Kelas',
+      type: 'select',
+      options: ['1', '2', '3', '4', '5', '6'],
+    },
+    {
+      id: 'parent-occupation',
+      question: 'Pekerjaan Orang Tua',
+      type: 'select',
+      options: ['Pelajar/Mahasiswa', 'Pegawai Negeri', 'Pegawai Swasta', 'Wiraswasta', 'Ibu Rumah Tangga', 'Tidak Bekerja', 'Pensiunan', 'Lainnya'],
+    },
+    {
+      id: 'parent-education',
+      question: 'Pendidikan Terakhir Orang Tua',
       type: 'select',
       options: ['SD', 'SMP', 'SMA', 'Diploma', 'Sarjana', 'S2', 'S3', 'Lainnya'],
     },
