@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
 import type { Question } from '@/lib/survey-data';
 import { allQuestions } from '@/lib/survey-data';
@@ -37,7 +37,7 @@ const createSchema = (questions: Question[]) => {
         break;
       case 'radio':
       case 'select':
-        validator = z.string({ required_error: "Pilih salah satu opsi" });
+        validator = z.string({ required_error: "Pilih salah satu opsi" }).min(1, "Wajib diisi");
         break;
       case 'date':
         validator = z.date({ required_error: "Tanggal wajib diisi" });
@@ -53,6 +53,58 @@ const createSchema = (questions: Question[]) => {
 
 const surveySchema = createSchema(allQuestions);
 type SurveyFormData = z.infer<typeof surveySchema>;
+
+function SearchableSelect({ field, options, placeholder, disabled, onValueChange }: { field: any, options: string[], placeholder: string, disabled?: boolean, onValueChange: (value: string) => void }) {
+    const [open, setOpen] = useState(false)
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between"
+                    disabled={disabled}
+                >
+                    {field.value
+                        ? options.find((option) => option.toLowerCase() === field.value.toLowerCase())
+                        : placeholder}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" style={{minWidth: "var(--radix-popover-trigger-width)"}}>
+                <Command>
+                    <CommandInput placeholder={placeholder} />
+                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                    <CommandList>
+                        <CommandGroup>
+                            {options.map((option) => (
+                                <CommandItem
+                                    key={option}
+                                    value={option}
+                                    onSelect={(currentValue) => {
+                                        const newValue = currentValue.toLowerCase() === field.value?.toLowerCase() ? "" : currentValue
+                                        onValueChange(newValue)
+                                        setOpen(false)
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            field.value?.toLowerCase() === option.toLowerCase() ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {option}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    )
+}
 
 export function SurveyForm() {
   const [step, setStep] = useState(0);
@@ -70,7 +122,7 @@ export function SurveyForm() {
   useEffect(() => {
     if (selectedProvince) {
       setCities(getCitiesByProvince(selectedProvince));
-      form.resetField('city');
+      form.setValue('city', '');
     } else {
       setCities([]);
     }
@@ -146,26 +198,13 @@ export function SurveyForm() {
           </RadioGroup>
         );
        case 'select':
-        let options: string[] = [];
         if (currentQuestion.id === 'province') {
-          options = provinces.map(p => p.name);
-        } else if (currentQuestion.id === 'city') {
-          options = cities;
-        } else {
-          options = currentQuestion.options || [];
+           return <SearchableSelect field={field} options={provinces.map(p => p.name)} placeholder="Pilih Provinsi..." onValueChange={field.onChange} />;
         }
-        return (
-           <Select onValueChange={field.onChange} defaultValue={field.value} disabled={currentQuestion.id === 'city' && !selectedProvince}>
-            <SelectTrigger>
-              <SelectValue placeholder={`Pilih ${currentQuestion.question}...`} />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((option) => (
-                <SelectItem key={option} value={option}>{option}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )
+        if (currentQuestion.id === 'city') {
+           return <SearchableSelect field={field} options={cities} placeholder="Pilih Kota/Kabupaten..." disabled={!selectedProvince} onValueChange={field.onChange} />;
+        }
+        return null;
       default:
         return null;
     }
