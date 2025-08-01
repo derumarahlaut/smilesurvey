@@ -5,7 +5,7 @@ import { SurveyForm } from '@/components/survey-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { List } from 'lucide-react';
+import { List, LayoutDashboard } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -14,12 +14,20 @@ export default function Home() {
         <Card className="shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-headline text-4xl">FORM PEMERIKSAAN GIGI</CardTitle>
-            <Link href="/master" passHref>
-               <Button variant="outline">
-                  <List className="mr-2 h-4 w-4" />
-                  Tabel Master
-               </Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link href="/master" passHref>
+                 <Button variant="outline">
+                    <List className="mr-2 h-4 w-4" />
+                    Tabel Master
+                 </Button>
+              </Link>
+              <Link href="/dashboard" passHref>
+                 <Button variant="outline">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Dashboard
+                 </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             <SurveyForm />
