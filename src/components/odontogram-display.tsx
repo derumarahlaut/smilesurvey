@@ -67,7 +67,7 @@ const ToothRowDisplay = ({ patientData, teethRight, teethLeft } : { patientData:
 export function OdontogramDisplay({ patientData }: { patientData: any }) {
 
   return (
-    <div className="w-full p-4 border rounded-lg space-y-4 bg-gray-50">
+    <div className="w-full p-4 border rounded-lg space-y-4 bg-gray-50 overflow-hidden">
         <div className="space-y-2 flex-grow">
           <div className="flex justify-between text-sm font-bold px-4">
             <span>RA Kanan</span>
@@ -76,14 +76,18 @@ export function OdontogramDisplay({ patientData }: { patientData: any }) {
 
           <div className="flex items-center gap-2">
               <span className="text-xs font-medium w-16 text-center transform -rotate-90">Gigi Tetap</span>
-              <div className="flex-1">
-                <ToothRowDisplay patientData={patientData} teethRight={adultTeeth.upperRight} teethLeft={adultTeeth.upperLeft} />
+              <div className="flex-1 overflow-x-auto pb-2">
+                <div className="min-w-[640px]">
+                  <ToothRowDisplay patientData={patientData} teethRight={adultTeeth.upperRight} teethLeft={adultTeeth.upperLeft} />
+                </div>
               </div>
           </div>
           <div className="flex items-center gap-2">
               <span className="text-xs font-medium w-16 text-center transform -rotate-90">Gigi Susu</span>
-              <div className="flex-1">
-                <ToothRowDisplay patientData={patientData} teethRight={childTeeth.upperRight.slice().reverse()} teethLeft={childTeeth.upperLeft} />
+              <div className="flex-1 overflow-x-auto pb-2">
+                <div className="min-w-[640px]">
+                    <ToothRowDisplay patientData={patientData} teethRight={childTeeth.upperRight.slice().reverse()} teethLeft={childTeeth.upperLeft} />
+                </div>
               </div>
           </div>
           
@@ -91,14 +95,18 @@ export function OdontogramDisplay({ patientData }: { patientData: any }) {
 
           <div className="flex items-center gap-2">
                <span className="text-xs font-medium w-16 text-center transform -rotate-90">Gigi Susu</span>
-               <div className="flex-1">
-                <ToothRowDisplay patientData={patientData} teethRight={childTeeth.lowerRight.slice().reverse()} teethLeft={childTeeth.lowerLeft} />
+               <div className="flex-1 overflow-x-auto pb-2">
+                 <div className="min-w-[640px]">
+                    <ToothRowDisplay patientData={patientData} teethRight={childTeeth.lowerRight.slice().reverse()} teethLeft={childTeeth.lowerLeft} />
+                 </div>
                </div>
           </div>
            <div className="flex items-center gap-2">
                <span className="text-xs font-medium w-16 text-center transform -rotate-90">Gigi Tetap</span>
-               <div className="flex-1">
-                <ToothRowDisplay patientData={patientData} teethRight={adultTeeth.lowerRight.slice().reverse()} teethLeft={adultTeeth.lowerLeft} />
+               <div className="flex-1 overflow-x-auto pb-2">
+                <div className="min-w-[640px]">
+                    <ToothRowDisplay patientData={patientData} teethRight={adultTeeth.lowerRight.slice().reverse()} teethLeft={adultTeeth.lowerLeft} />
+                </div>
                </div>
           </div>
 
