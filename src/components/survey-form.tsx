@@ -5,8 +5,10 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Check, ChevronsUpDown, Calendar as CalendarIcon } from "lucide-react";
+import { Check, ChevronsUpDown, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { useRouter } from 'next/navigation';
+
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +21,8 @@ import { provinces, getCitiesByProvince } from '@/lib/location-data';
 import { Odontogram } from '@/components/odontogram';
 import { Button } from './ui/button';
 import { Calendar } from './ui/calendar';
+import { useToast } from '@/hooks/use-toast';
+import { saveSurvey } from '@/app/actions';
 
 const createSchema = () => {
   const schemaObject = allQuestions.reduce((acc, q) => {
@@ -166,6 +170,10 @@ const DateOfBirthInput = ({ control, name }: { control: any, name: string }) => 
 };
 
 export function SurveyForm() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const adultTeethIds = [
     ...[18, 17, 16, 15, 14, 13, 12, 11],
     ...[21, 22, 23, 24, 25, 26, 27, 28],
@@ -204,6 +212,27 @@ export function SurveyForm() {
   const patientCategory = form.watch('patient-category');
   
   const [cities, setCities] = useState<string[]>([]);
+  
+  const onSubmit = async (data: SurveyFormData) => {
+    setIsSubmitting(true);
+    const result = await saveSurvey(data);
+    setIsSubmitting(false);
+
+    if (result.error) {
+      toast({
+        title: "Gagal Menyimpan",
+        description: result.error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Data Berhasil Disimpan",
+        description: `Data pasien dengan nomor urut ${result.examId} telah disimpan.`,
+      });
+      router.push('/master');
+    }
+  };
+
 
   useEffect(() => {
     if (selectedProvince) {
@@ -234,7 +263,8 @@ export function SurveyForm() {
     
     const dateCode = examDate ? format(examDate, 'yyyyMMdd') : 'YYYYMMDD';
 
-    const uniqueId = `${provinceCode}-${cityCode}-${dateCode}-`;
+    const lastPart = form.getValues('exam-id')?.split('-')[3] || '';
+    const uniqueId = `${provinceCode}-${cityCode}-${dateCode}-${lastPart}`;
     form.setValue('exam-id', uniqueId);
 
   }, [selectedProvince, selectedCity, examDate, form, cities]);
@@ -251,7 +281,7 @@ export function SurveyForm() {
   }
 
   return (
-    <form className="space-y-8">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField id="province">
@@ -329,7 +359,7 @@ export function SurveyForm() {
                     />
                 </FormField>
                 <FormField id="exam-id" className="md:col-span-2">
-                 <Controller name="exam-id" control={form.control} render={({ field }) => <Input {...field} id="exam-id" readOnly className="bg-gray-100" />} />
+                 <Controller name="exam-id" control={form.control} render={({ field }) => <Input {...field} id="exam-id" placeholder="Auto-generated, tambahkan nomor urut manual di akhir" />} />
               </FormField>
           </div>
           
@@ -497,6 +527,13 @@ export function SurveyForm() {
         <div className="space-y-4">
              <h3 className="text-lg font-medium">Status Gigi Geligi</h3>
             <Odontogram form={form} />
+        </div>
+        
+        <div className="flex justify-end gap-4">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Simpan Data
+            </Button>
         </div>
     </form>
   );

@@ -21,60 +21,6 @@ export type Patient = {
     parentEducation?: string;
 }
 
-export const patients: Patient[] = [
-    {
-        examId: "13-01-20240801-001",
-        examDate: "2024-08-01",
-        province: "Jawa Barat",
-        city: "Bandung",
-        agency: "Dinas Kesehatan Provinsi Jawa Barat",
-        examiner: "Dr. Budi",
-        recorder: "Susi",
-        patientCategory: "Umum",
-        name: "Ahmad Dahlan",
-        village: "Cimahi",
-        occupation: "Wiraswasta",
-        address: "Jl. Merdeka No. 1",
-        birthDate: "1980-05-10",
-        gender: "Laki-laki",
-        education: "SMA"
-    },
-    {
-        examId: "13-02-20240802-001",
-        examDate: "2024-08-02",
-        province: "Jawa Barat",
-        city: "Bekasi",
-        agency: "Puskesmas Mekar Sari",
-        examiner: "Dr. Citra",
-        recorder: "Adi",
-        patientCategory: "Siswa sekolah dasar (SD)",
-        name: "Siti Aminah",
-        birthDate: "2015-02-20",
-        gender: "Perempuan",
-        schoolName: "SDN 01 Bekasi",
-        classLevel: "3",
-        parentOccupation: "Pegawai Swasta",
-        parentEducation: "Sarjana"
-    },
-     {
-        examId: "12-01-20240803-001",
-        examDate: "2024-08-03",
-        province: "DKI Jakarta",
-        city: "Jakarta Pusat",
-        agency: "Klinik Sehat",
-        examiner: "Dr. Doni",
-        recorder: "Rina",
-        patientCategory: "Umum",
-        name: "Eko Prasetyo",
-        village: "Gambir",
-        occupation: "Pegawai Negeri",
-        address: "Jl. Sudirman No. 10",
-        birthDate: "1992-11-30",
-        gender: "Laki-laki",
-        education: "Sarjana"
-    },
-]
-
 // Re-exporting location data from here to be used in patient-table
 export const provinces = [
   { name: 'Aceh', cities: ['Banda Aceh', 'Langsa', 'Lhokseumawe', 'Sabang', 'Subulussalam', 'Kabupaten Aceh Barat', 'Kabupaten Aceh Barat Daya', 'Kabupaten Aceh Besar', 'Kabupaten Aceh Jaya', 'Kabupaten Aceh Selatan', 'Kabupaten Aceh Singkil', 'Kabupaten Aceh Tamiang', 'Kabupaten Aceh Tengah', 'Kabupaten Aceh Tenggara', 'Kabupaten Aceh Timur', 'Kabupaten Aceh Utara', 'Kabupaten Bener Meriah', 'Kabupaten Bireuen', 'Kabupaten Gayo Lues', 'Kabupaten Nagan Raya', 'Kabupaten Pidie', 'Kabupaten Pidie Jaya', 'Kabupaten Simeulue'] },

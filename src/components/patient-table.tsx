@@ -14,18 +14,18 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, Trash2, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
@@ -44,6 +44,99 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
+import { deletePatient } from "@/app/actions"
+
+
+const ActionCell = ({ row }: { row: any }) => {
+  const patient = row.original as Patient
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isAlertOpen, setIsAlertOpen] = React.useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    const result = await deletePatient(patient.examId);
+    setIsDeleting(false);
+    setIsAlertOpen(false);
+
+    if (result.error) {
+      toast({
+        title: "Gagal Menghapus",
+        description: result.error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Data Terhapus",
+        description: `Data pasien ${patient.name} telah dihapus.`,
+      });
+    }
+  };
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={() => navigator.clipboard.writeText(patient.examId)}
+          >
+            Salin ID
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>Lihat Pasien</DropdownMenuItem>
+          <DropdownMenuItem>Edit Pasien</DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+            onClick={() => setIsAlertOpen(true)}
+          >
+             <Trash2 className="mr-2 h-4 w-4" />
+             Hapus Pasien
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Anda yakin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini tidak dapat dibatalkan. Ini akan menghapus data pasien secara permanen dari server.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Ya, hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 
 export const columns: ColumnDef<Patient>[] = [
   {
@@ -70,8 +163,14 @@ export const columns: ColumnDef<Patient>[] = [
     accessorKey: "examDate",
     header: "Tanggal Pemeriksaan",
     cell: ({ row }) => {
-       const date = new Date(row.getValue("examDate"));
-       return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(date);
+       try {
+         const date = new Date(row.getValue("examDate"));
+         // Check if date is valid
+         if (isNaN(date.getTime())) return "-";
+         return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(date);
+       } catch (e) {
+         return row.getValue("examDate");
+       }
     },
   },
   {
@@ -92,32 +191,7 @@ export const columns: ColumnDef<Patient>[] = [
   {
     id: "actions",
     enableHiding: false,
-    cell: ({ row }) => {
-      const patient = row.original
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(patient.examId)}
-            >
-              Salin ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Lihat Pasien</DropdownMenuItem>
-            <DropdownMenuItem>Edit Pasien</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">Hapus Pasien</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
+    cell: ActionCell,
   },
 ]
 
@@ -217,6 +291,14 @@ export function PatientTable({ data }: { data: Patient[] }) {
                   .getAllColumns()
                   .filter((column) => column.getCanHide())
                   .map((column) => {
+                    const headerMap: Record<string, string> = {
+                        examId: "Nomor Urut",
+                        name: "Nama Pasien",
+                        examDate: "Tanggal Pemeriksaan",
+                        province: "Provinsi",
+                        city: "Kota/Kabupaten",
+                        patientCategory: "Kategori Pasien"
+                    }
                     return (
                       <DropdownMenuCheckboxItem
                         key={column.id}
@@ -226,11 +308,7 @@ export function PatientTable({ data }: { data: Patient[] }) {
                           column.toggleVisibility(!!value)
                         }
                       >
-                        {column.id === 'examId' ? 'Nomor Urut' : 
-                         column.id === 'name' ? 'Nama Pasien' : 
-                         column.id === 'examDate' ? 'Tanggal Pemeriksaan' :
-                         column.id === 'patientCategory' ? 'Kategori Pasien' :
-                         column.id}
+                       {headerMap[column.id] || column.id}
                       </DropdownMenuCheckboxItem>
                     )
                   })}
