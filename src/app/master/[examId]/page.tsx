@@ -1,12 +1,30 @@
 
-import { getPatient } from '@/app/actions';
+'use client';
+
+import { getPatient, verifyPatient } from '@/app/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, ArrowLeft, Pencil, List } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Pencil, List, CheckCircle, ShieldQuestion } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { allQuestions } from '@/lib/survey-data';
+import { useEffect, useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const toothStatusCodeMap: Record<string, string> = {
     // Gigi Tetap
@@ -28,21 +46,110 @@ const toothStatusCodeMap: Record<string, string> = {
     'E': 'Gigi dicabut karena karies',
 };
 
-const DataField = ({ label, value }: { label: string; value?: string | number | null }) => {
-    if (!value && value !== 0) return null;
+const DataField = ({ label, value, children }: { label: string; value?: string | number | null; children?: React.ReactNode }) => {
+    if (!value && value !== 0 && !children) return null;
     return (
         <div>
             <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="font-medium">{String(value)}</p>
+            {value && <p className="font-medium">{String(value)}</p>}
+            {children}
         </div>
     );
 };
 
 const getLabel = (key: string) => allQuestions.find(q => q.id === key)?.question || key;
 
-export default async function ViewPatientPage({ params }: { params: { examId: string } }) {
+const VerificationDialog = ({ examId }: { examId: string }) => {
+    const [verifierName, setVerifierName] = useState('');
+    const [isVerifying, setIsVerifying] = useState(false);
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const handleVerify = async () => {
+        if (!verifierName.trim()) {
+            toast({
+                title: 'Nama Verifikator Kosong',
+                description: 'Mohon isi nama Anda untuk melanjutkan verifikasi.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        setIsVerifying(true);
+        const result = await verifyPatient(examId, verifierName);
+        setIsVerifying(false);
+
+        if (result.error) {
+            toast({
+                title: 'Gagal Memverifikasi',
+                description: result.error,
+                variant: 'destructive',
+            });
+        } else {
+            toast({
+                title: 'Verifikasi Berhasil',
+                description: `Data pasien ${examId} telah diverifikasi oleh ${verifierName}.`,
+            });
+            // Force a reload of the current page to show updated verification status
+            router.refresh(); 
+        }
+    };
+
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="secondary">
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Verifikasi Data
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Konfirmasi Verifikasi Data</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Dengan ini Anda menyatakan bahwa data yang diinput untuk pasien {examId} sudah benar dan valid.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2">
+                    <Label htmlFor="verifierName">Nama Verifikator</Label>
+                    <Input
+                        id="verifierName"
+                        value={verifierName}
+                        onChange={(e) => setVerifierName(e.target.value)}
+                        placeholder="Masukkan nama lengkap Anda..."
+                    />
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleVerify} disabled={isVerifying}>
+                        {isVerifying ? 'Memverifikasi...' : 'Ya, Verifikasi'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+};
+
+
+export default function ViewPatientPage({ params }: { params: { examId: string } }) {
   const { examId } = params;
-  const { patient, error } = await getPatient(examId);
+  const [patient, setPatient] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPatient = async () => {
+      setLoading(true);
+      const { patient: fetchedPatient, error: fetchError } = await getPatient(examId);
+      if (fetchError) {
+        setError(fetchError);
+      } else {
+        setPatient(fetchedPatient);
+      }
+      setLoading(false);
+    };
+    fetchPatient();
+  }, [examId]);
+
 
   const demographicFields = [
     { id: 'exam-id', label: 'Nomor Urut' },
@@ -84,9 +191,12 @@ export default async function ViewPatientPage({ params }: { params: { examId: st
   ];
 
   const formatDisplayValue = (key: string, value: any): string => {
-    if (!value) return '-';
+    if (value === null || value === undefined || value === '') return '-';
     if (key === 'exam-date' && value instanceof Date) {
       return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(value);
+    }
+     if (key === 'verifiedAt' && value instanceof Date) {
+      return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeStyle: 'short' }).format(value);
     }
     if (key === 'birth-date' && typeof value === 'object') {
         return `${value.day}/${value.month}/${value.year}`;
@@ -101,6 +211,135 @@ export default async function ViewPatientPage({ params }: { params: { examId: st
     const description = toothStatusCodeMap[code];
     return description ? `${code} (${description})` : code;
   };
+
+  const renderContent = () => {
+    if (loading) {
+       return (
+         <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Memuat Data...</AlertTitle>
+            <AlertDescription>Sedang mengambil data pasien, mohon tunggu.</AlertDescription>
+          </Alert>
+       )
+    }
+    if (error) {
+       return (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Gagal Memuat Data</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )
+    }
+    if (patient) {
+        return (
+            <div className="space-y-6">
+                {/* Verification Status */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Status Verifikasi</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {patient.verifierName && patient.verifiedAt ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                                <CheckCircle className="h-5 w-5" />
+                                <div>
+                                    <p className="font-semibold">Data Terverifikasi</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Oleh: {patient.verifierName} pada {formatDisplayValue('verifiedAt', patient.verifiedAt)}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                             <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 text-yellow-600">
+                                    <ShieldQuestion className="h-5 w-5" />
+                                    <div>
+                                        <p className="font-semibold">Data Belum Diverifikasi</p>
+                                        <p className="text-sm text-muted-foreground">
+                                           Klik tombol di samping untuk memverifikasi keakuratan data ini.
+                                        </p>
+                                    </div>
+                                </div>
+                                <VerificationDialog examId={examId} />
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+
+                {/* Demographics */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Data Diri Pasien</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+                        {demographicFields.map(field => (
+                            <DataField key={field.id} label={field.label} value={formatDisplayValue(field.id, patient[field.id])} />
+                        ))}
+                    </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Data Pendidikan & Pekerjaan</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4">
+                           {educationFields.map(field => (
+                                <DataField key={field.id} label={getLabel(field.id)} value={formatDisplayValue(field.id, patient[field.id])} />
+                            ))}
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Data Pemeriksaan</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4">
+                            {professionalFields.map(field => (
+                                <DataField key={field.id} label={field.label} value={formatDisplayValue(field.id, patient[field.id])} />
+                            ))}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Clinical */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Hasil Pemeriksaan Klinis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+                            {clinicalFields.map(field => (
+                                <DataField key={field.id} label={field.label} value={patient[field.id]} />
+                            ))}
+                        </div>
+                         <Separator className="my-6" />
+                         <div>
+                            <h4 className="mb-2 font-medium">Status Gigi Geligi</h4>
+                            <div className="flex flex-col gap-2">
+                                {Object.entries(patient)
+                                    .filter(([key]) => key.startsWith('Status Gigi'))
+                                    .sort(([keyA], [keyB]) => {
+                                        const numA = parseInt(keyA.replace('Status Gigi ', ''), 10);
+                                        const numB = parseInt(keyB.replace('Status Gigi ', ''), 10);
+                                        return numA - numB;
+                                    })
+                                    .map(([key, value]) => (
+                                        <div key={key} className="flex justify-between items-center text-sm border-b pb-1">
+                                            <span className="text-muted-foreground">{key}</span>
+                                            <span className="font-mono font-medium">{formatToothStatusValue(value)}</span>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+  }
 
 
   return (
@@ -130,77 +369,7 @@ export default async function ViewPatientPage({ params }: { params: { examId: st
              </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {error && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Gagal Memuat Data</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            {patient && (
-                <div className="space-y-6">
-                    {/* Demographics */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Data Diri Pasien</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-                            {demographicFields.map(field => (
-                                <DataField key={field.id} label={field.label} value={formatDisplayValue(field.id, patient[field.id])} />
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                         <Card>
-                            <CardHeader>
-                                <CardTitle>Data Pendidikan & Pekerjaan</CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4">
-                               {educationFields.map(field => (
-                                    <DataField key={field.id} label={getLabel(field.id)} value={formatDisplayValue(field.id, patient[field.id])} />
-                                ))}
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader>
-                                <CardTitle>Data Pemeriksaan</CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4">
-                                {professionalFields.map(field => (
-                                    <DataField key={field.id} label={field.label} value={formatDisplayValue(field.id, patient[field.id])} />
-                                ))}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Clinical */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Hasil Pemeriksaan Klinis</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-                                {clinicalFields.map(field => (
-                                    <DataField key={field.id} label={field.label} value={patient[field.id]} />
-                                ))}
-                            </div>
-                             <Separator className="my-6" />
-                             <div>
-                                <h4 className="mb-2 font-medium">Status Gigi Geligi</h4>
-                                <div className="flex flex-col gap-2">
-                                    {Object.entries(patient)
-                                        .filter(([key]) => key.startsWith('Status Gigi'))
-                                        .map(([key, value]) => (
-                                            <DataField key={key} label={key} value={formatToothStatusValue(value)} />
-                                        ))
-                                    }
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+            {renderContent()}
           </CardContent>
         </Card>
       </div>

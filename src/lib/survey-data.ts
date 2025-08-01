@@ -65,7 +65,10 @@ export const allQuestions: Question[] = [
         id: 'odontogram-chart',
         question: 'Pemeriksaan Klinis',
         type: 'custom',
-    }
+    },
+    // Verification fields
+    { id: 'verifierName', question: 'Nama Verifikator', type: 'text' },
+    { id: 'verifiedAt', question: 'Tanggal Verifikasi', type: 'datetime' },
 ];
 
 // This structure is now flatter as we don't need sections for the single-page layout.

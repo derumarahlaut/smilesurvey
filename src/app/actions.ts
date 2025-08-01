@@ -5,7 +5,7 @@ import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips'
 import { analyzeDentalData, type DentalAnalysisInput } from '@/ai/flows/analyze-dental-data';
 import { allQuestions } from '@/lib/survey-data';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc, Timestamp, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format, differenceInYears, parse } from 'date-fns';
@@ -64,7 +64,7 @@ function processFormData(formData: Record<string, any>) {
     ];
     const allChildTeethIds = [
       ...[55, 54, 53, 52, 51], ...[61, 62, 63, 64, 65],
-      ...[81, 82, 83, 84, 85], ...[71, 72, 73, 74, 75]
+      ...[71, 72, 73, 74, 75], ...[81, 82, 83, 84, 85]
     ];
     
     for (const key in odontogramChartData) {
@@ -271,6 +271,9 @@ export async function getPatient(examId: string) {
           const [year, month, day] = data['birth-date'].split('-').map(Number);
           data['birth-date'] = { day: String(day), month: String(month), year: String(year) };
       }
+      if (data['verifiedAt'] && data['verifiedAt'] instanceof Timestamp) {
+        data['verifiedAt'] = data['verifiedAt'].toDate();
+      }
       const fullData = {
           ...data,
           ...processFormData(data), // Add processed data like scores
@@ -282,6 +285,25 @@ export async function getPatient(examId: string) {
   } catch (error: any) {
     console.error("Error fetching patient:", error);
     return { error: `Gagal mengambil data pasien: ${error.message}` };
+  }
+}
+
+export async function verifyPatient(examId: string, verifierName: string) {
+  if (!verifierName) {
+    return { error: 'Nama verifikator harus diisi.' };
+  }
+  try {
+    const docRef = doc(db, 'patients', examId);
+    await updateDoc(docRef, {
+      verifierName: verifierName,
+      verifiedAt: Timestamp.now(),
+    });
+    revalidatePath('/master');
+    revalidatePath(`/master/${examId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error verifying patient:', error);
+    return { error: `Gagal memverifikasi data: ${error.message}` };
   }
 }
 

@@ -7,6 +7,7 @@ import type { Patient } from '@/lib/patient-data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { LayoutDashboard } from 'lucide-react';
+import { Timestamp } from 'firebase/firestore';
 
 async function getPatients(): Promise<Patient[]> {
   const patientsCol = collection(db, 'patients');
@@ -14,6 +15,11 @@ async function getPatients(): Promise<Patient[]> {
   const patientSnapshot = await getDocs(q);
   const patientList = patientSnapshot.docs.map(doc => {
     const data = doc.data();
+    let verifiedAt = data.verifiedAt;
+    if (verifiedAt instanceof Timestamp) {
+      verifiedAt = verifiedAt.toDate().toISOString();
+    }
+
     return {
       // We need to map the Firestore data back to our Patient type
       examId: data['exam-id'],
@@ -36,6 +42,8 @@ async function getPatients(): Promise<Patient[]> {
       classLevel: data['class-level'],
       parentOccupation: data['parent-occupation'],
       parentEducation: data['parent-education'],
+      verifierName: data.verifierName,
+      verifiedAt: verifiedAt,
     } as Patient;
   });
   return patientList;

@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, Trash2, Loader2, Pencil, FileText } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Plus, Trash2, Loader2, Pencil, FileText, CheckCircle } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
@@ -188,14 +188,24 @@ export const columns: ColumnDef<Patient>[] = [
     cell: ({ row }) => <div>{row.getValue("city")}</div>,
   },
   {
-    accessorKey: "district",
-    header: "Kecamatan",
-    cell: ({ row }) => <div>{row.getValue("district")}</div>,
-  },
-  {
     accessorKey: "patientCategory",
     header: "Kategori Pasien",
     cell: ({ row }) => <div>{row.getValue("patientCategory")}</div>,
+  },
+  {
+    accessorKey: "verifierName",
+    header: "Verifikator",
+    cell: ({ row }) => {
+        const verifierName = row.getValue("verifierName");
+        return verifierName ? (
+            <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span className="capitalize">{String(verifierName)}</span>
+            </div>
+        ) : (
+            <span className="text-muted-foreground">-</span>
+        )
+    }
   },
   {
     id: "actions",
@@ -210,7 +220,9 @@ export function PatientTable({ data }: { data: Patient[] }) {
     []
   )
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+    React.useState<VisibilityState>({
+       district: false // Hide district by default
+    })
   const [rowSelection, setRowSelection] = React.useState({})
 
   const [provinceFilter, setProvinceFilter] = React.useState<string>("all")
@@ -307,7 +319,8 @@ export function PatientTable({ data }: { data: Patient[] }) {
                         province: "Provinsi",
                         city: "Kota/Kabupaten",
                         district: "Kecamatan",
-                        patientCategory: "Kategori Pasien"
+                        patientCategory: "Kategori Pasien",
+                        verifierName: "Verifikator"
                     }
                     return (
                       <DropdownMenuCheckboxItem

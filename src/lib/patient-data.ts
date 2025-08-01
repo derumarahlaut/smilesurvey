@@ -21,6 +21,8 @@ export type Patient = {
     classLevel?: '1' | '2' | '3' | '4' | '5' | '6';
     parentOccupation?: string;
     parentEducation?: string;
+    verifierName?: string;
+    verifiedAt?: any; // Can be Firestore Timestamp
 }
 
 // Re-exporting location data from here to be used in patient-table
