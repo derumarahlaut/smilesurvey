@@ -1,10 +1,11 @@
 export type Question = {
   id: string;
   question: string;
-  type: 'text' | 'number' | 'radio' | 'textarea' | 'date' | 'select';
+  type: 'text' | 'number' | 'radio' | 'textarea' | 'date' | 'select' | 'custom';
   options?: string[];
   placeholder?: string;
   sectionId: string;
+  component?: React.ComponentType<any>;
 };
 
 export type Section = {
@@ -87,7 +88,7 @@ export const sections: Section[] = [
         id: 'education',
         question: 'Pendidikan Terakhir',
         type: 'radio',
-        options: ['SD', 'SMP', 'SMA', 'Diploma', 'Sarjana', 'Lainnya'],
+        options: ['SD', 'SMP', 'SMA', 'Diploma', 'Sarjana', 'S2', 'S3', 'Lainnya'],
         sectionId: 'patient-identity',
       },
     ],
@@ -97,46 +98,11 @@ export const sections: Section[] = [
     title: 'Pemeriksaan Klinis',
     questions: [
       {
-        id: 'odontogram',
-        question: 'Odontogram (Catatan)',
-        type: 'textarea',
-        placeholder: 'Catat temuan pada odontogram...',
+        id: 'odontogram-chart',
+        question: 'Status Gigi Geligi',
+        type: 'custom',
         sectionId: 'dental-check',
-      },
-      {
-        id: 'gum-check',
-        question: 'Pemeriksaan Gusi',
-        type: 'radio',
-        options: ['Baik', 'Ada karang gigi', 'Radang gusi (Gingivitis)'],
-        sectionId: 'dental-check',
-      },
-      {
-        id: 'mucosal-lesion',
-        question: 'Lesi Mukosa Oral',
-        type: 'radio',
-        options: ['Tidak Ada', 'Ada'],
-        sectionId: 'dental-check',
-      },
-    ],
-  },
-  {
-    id: 'treatment-plan',
-    title: 'Kebutuhan Perawatan',
-    questions: [
-      {
-        id: 'treatment-needs',
-        question: 'Kebutuhan Perawatan',
-        type: 'radio',
-        options: ['Tidak ada', 'Pembersihan karang gigi (scalling)', 'Penambalan', 'Pencabutan', 'Perawatan Saluran Akar', 'Lainnya'],
-        sectionId: 'treatment-plan',
-      },
-      {
-        id: 'referral',
-        question: 'Rujukan',
-        type: 'radio',
-        options: ['Ya', 'Tidak'],
-        sectionId: 'treatment-plan',
-      },
+      }
     ],
   },
 ];

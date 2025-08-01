@@ -9,25 +9,33 @@ export async function submitSurvey(formData: Record<string, any>) {
   try {
     const surveyResponses: Record<string, any> = {};
 
+    const { 'odontogram-chart': odontogramData, ...regularFormData } = formData;
+
+
     // Manually add province and city to the responses object for the prompt
-    if (formData.province) {
-        surveyResponses['Provinsi'] = formData.province;
+    if (regularFormData.province) {
+        surveyResponses['Provinsi'] = regularFormData.province;
     }
-     if (formData.city) {
-        surveyResponses['Kota/Kabupaten'] = formData.city;
+     if (regularFormData.city) {
+        surveyResponses['Kota/Kabupaten'] = regularFormData.city;
     }
 
-    for (const questionId in formData) {
+    for (const questionId in regularFormData) {
       if (questionId === 'province' || questionId === 'city') continue;
 
       const question = allQuestions.find(q => q.id === questionId);
-      if (question && formData[questionId]) {
-        if (formData[questionId] instanceof Date) {
-            surveyResponses[question.question] = format(formData[questionId], 'yyyy-MM-dd');
+      if (question && regularFormData[questionId]) {
+        if (regularFormData[questionId] instanceof Date) {
+            surveyResponses[question.question] = format(regularFormData[questionId], 'yyyy-MM-dd');
         } else {
-            surveyResponses[question.question] = formData[questionId];
+            surveyResponses[question.question] = regularFormData[questionId];
         }
       }
+    }
+    
+    // Add odontogram data to surveyResponses
+    if (odontogramData) {
+      surveyResponses['Pemeriksaan Klinis'] = JSON.stringify(odontogramData, null, 2);
     }
 
     if (Object.keys(surveyResponses).length <= 2) { // check for more than just province/city
