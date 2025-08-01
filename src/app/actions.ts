@@ -9,7 +9,6 @@ import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, lim
 import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format, differenceInYears, parse } from 'date-fns';
-import nodemailer from 'nodemailer';
 
 
 async function getNextPatientSequence(idPrefix: string): Promise<string> {
@@ -290,6 +289,7 @@ export async function getPatient(examId: string) {
 }
 
 async function sendVerificationEmail(patientData: any) {
+    const nodemailer = (await import('nodemailer')).default;
     const {
         EMAIL_HOST,
         EMAIL_PORT,
