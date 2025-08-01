@@ -1,12 +1,11 @@
 
 import { z } from 'zod';
 
-// Define the structure for a single patient record within the input.
-// This should match the data structure being saved in Firestore.
 const PatientDataSchema = z.record(z.string(), z.any()).describe('A single patient record containing all their survey and clinical data.');
 
 export const DentalAnalysisInputSchema = z.object({
   patients: z.array(PatientDataSchema).describe('An array of all patient data records to be analyzed.'),
+  language: z.string().optional().default('indonesian').describe('The language for the analysis output. Supported: "english", "indonesian".'),
 });
 export type DentalAnalysisInput = z.infer<typeof DentalAnalysisInputSchema>;
 

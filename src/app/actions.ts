@@ -5,7 +5,7 @@ import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips'
 import { analyzeDentalData, type DentalAnalysisInput } from '@/ai/flows/analyze-dental-data';
 import { allQuestions } from '@/lib/survey-data';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format } from 'date-fns';
@@ -60,11 +60,11 @@ function processFormData(formData: Record<string, any>) {
     
     const allAdultTeethIds = [
       ...[18, 17, 16, 15, 14, 13, 12, 11], ...[21, 22, 23, 24, 25, 26, 27, 28],
-      ...[31, 32, 33, 34, 35, 36, 37, 38], ...[48, 47, 46, 45, 44, 43, 42, 41]
+      ...[41, 42, 43, 44, 45, 46, 47, 48], ...[38, 37, 36, 35, 34, 33, 32, 31]
     ];
     const allChildTeethIds = [
       ...[55, 54, 53, 52, 51], ...[61, 62, 63, 64, 65],
-      ...[71, 72, 73, 74, 75], ...[85, 84, 83, 82, 81]
+      ...[81, 82, 83, 84, 85], ...[75, 74, 73, 72, 71]
     ];
     
     for (const key in odontogramChartData) {
@@ -261,7 +261,6 @@ export async function getPatient(examId: string) {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      // Convert date strings back to Date objects for the form
       if (data['exam-date']) {
           data['exam-date'] = new Date(data['exam-date']);
       }
@@ -280,10 +279,35 @@ export async function getPatient(examId: string) {
 }
 
 
-export async function getDashboardAnalysis() {
+export async function getDashboardAnalysis(filters: {
+  language: string;
+  province?: string;
+  city?: string;
+  dateRange?: { from?: Date; to?: Date };
+}) {
   try {
-    const patientsCol = collection(db, 'patients');
-    const patientSnapshot = await getDocs(patientsCol);
+    let patientQuery: any = collection(db, 'patients');
+    
+    const queryConstraints = [];
+
+    if (filters.province) {
+        queryConstraints.push(where('province', '==', filters.province));
+    }
+    if (filters.city) {
+        queryConstraints.push(where('city', '==', filters.city));
+    }
+    if (filters.dateRange?.from) {
+        queryConstraints.push(where('exam-date', '>=', format(filters.dateRange.from, 'yyyy-MM-dd')));
+    }
+    if (filters.dateRange?.to) {
+        queryConstraints.push(where('exam-date', '<=', format(filters.dateRange.to, 'yyyy-MM-dd')));
+    }
+
+    if (queryConstraints.length > 0) {
+      patientQuery = query(patientQuery, ...queryConstraints);
+    }
+    
+    const patientSnapshot = await getDocs(patientQuery);
     
     if (patientSnapshot.empty) {
         return { analysis: null };
@@ -291,7 +315,7 @@ export async function getDashboardAnalysis() {
 
     const patientList = patientSnapshot.docs.map(doc => doc.data() as DentalAnalysisInput['patients'][0]);
     
-    const result = await analyzeDentalData({ patients: patientList });
+    const result = await analyzeDentalData({ patients: patientList, language: filters.language });
 
     if (!result) {
         return { error: 'Gagal menganalisis data. AI tidak memberikan respons.' };

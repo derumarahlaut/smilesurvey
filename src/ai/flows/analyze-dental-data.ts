@@ -34,6 +34,8 @@ You are a public health data analyst specializing in community dental health in 
 You have been provided with a JSON dataset containing numerous patient records from a dental survey.
 Your task is to perform a comprehensive analysis of this data and provide structured insights.
 
+The user has requested the report to be in {{language}}. All text in the 'executiveSummary', 'keyFindings', and 'recommendations' fields must be in {{language}}.
+
 Carefully analyze the provided patient data:
 {{{json patients}}}
 
@@ -48,7 +50,7 @@ Based on your analysis of the FULL dataset, please provide the following in your
 3.  **Key Findings**: Identify and list 3-5 of the most important qualitative findings. These could be about common problems (e.g., "High prevalence of untreated caries in primary school students"), regional disparities, or correlations between demographics and dental health.
 4.  **Recommendations**: Based on your findings, provide a list of 3-5 actionable recommendations. These should be practical suggestions for public health officials, like "Launch a targeted fissure sealant program in [Region]" or "Develop educational materials about the link between sugary drink consumption and caries for parents of elementary school children."
 
-Provide your entire response in the required structured format.
+Provide your entire response in the required structured format, with all textual analysis in {{language}}.
 `,
 });
 
@@ -59,15 +61,14 @@ const analyzeDentalDataFlow = ai.defineFlow(
     outputSchema: DentalAnalysisOutputSchema,
   },
   async (input) => {
-    // Slice the input to avoid sending excessively large payloads to the model,
-    // but the prompt will instruct it to act as if it has the full dataset.
+    // The prompt will still instruct the model to act as if it has the full dataset.
     const limitedInput = {
-        patients: input.patients.slice(0, 200) // Use a reasonable limit
+        patients: input.patients.slice(0, 200), // Use a reasonable limit
+        language: input.language
     };
     
     const { output } = await analysisPrompt(limitedInput);
 
-    // Basic validation in case the model returns null
     if (!output) {
       throw new Error("The AI model did not return a valid analysis.");
     }
@@ -83,23 +84,20 @@ const analyzeDentalDataFlow = ai.defineFlow(
         const provinceCounts: Record<string, number> = {};
 
         for(const p of input.patients) {
-            // Recalculate DMF-T
             if (p['DMF-T Score'] && typeof p['DMF-T Score'] === 'string') {
-                const match = p['DMF-T Score'].match(/Total: (\d+)/);
+                const match = p['DMF-T Score'].match(/Total:\s*(\d+)/);
                 if (match && match[1]) {
                     dmftTotal += parseInt(match[1], 10);
                     dmftCount++;
                 }
             }
-            // Recalculate def-t
             if (p['def-t Score'] && typeof p['def-t Score'] === 'string') {
-                const match = p['def-t Score'].match(/Total: (\d+)/);
+                const match = p['def-t Score'].match(/Total:\s*(\d+)/);
                  if (match && match[1]) {
                     deftTotal += parseInt(match[1], 10);
                     deftCount++;
                 }
             }
-            // Count provinces
             if(p.province && typeof p.province === 'string') {
                 provinceCounts[p.province] = (provinceCounts[p.province] || 0) + 1;
             }
@@ -108,8 +106,8 @@ const analyzeDentalDataFlow = ai.defineFlow(
         output.keyStatistics.averageDmft = dmftCount > 0 ? parseFloat((dmftTotal / dmftCount).toFixed(2)) : 0;
         output.keyStatistics.averageDeft = deftCount > 0 ? parseFloat((deftTotal / deftCount).toFixed(2)) : 0;
         
-        const topProvince = Object.entries(provinceCounts).sort((a,b) => b[1] - a[1])[0];
-        output.keyStatistics.topProvince = topProvince ? topProvince[0] : 'N/A';
+        const topProvinceEntry = Object.entries(provinceCounts).sort((a,b) => b[1] - a[1])[0];
+        output.keyStatistics.topProvince = topProvinceEntry ? topProvinceEntry[0] : 'N/A';
     }
 
 
