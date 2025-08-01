@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { List, Home, FileText, BarChart, Users, MapPin, Activity, Lightbulb, AlertTriangle, Loader2, Calendar as CalendarIcon, Filter, X, Briefcase, School, User, Users2 } from 'lucide-react';
+import { List, Home, FileText, BarChart, Users, MapPin, Activity, Lightbulb, AlertTriangle, Loader2, Calendar as CalendarIcon, Filter, X } from 'lucide-react';
 import { getDashboardAnalysis } from '@/app/actions';
 import type { DentalAnalysisOutput } from '@/ai/flows/analyze-dental-data';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -16,7 +16,7 @@ import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { provinces, getCitiesByProvince } from '@/lib/location-data';
 import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DemographicChart } from '@/components/demographic-chart';
 
 
 const StatCard = ({ title, value, icon }: { title: string; value: string | number; icon: React.ReactNode }) => (
@@ -30,44 +30,6 @@ const StatCard = ({ title, value, icon }: { title: string; value: string | numbe
     </CardContent>
   </Card>
 );
-
-const SummaryTable = ({ title, data, icon }: { title: string, data: Record<string, number>, icon: React.ReactNode }) => {
-    const total = data['Jumlah'];
-    // Don't render "Jumlah" as a row
-    const entries = Object.entries(data).filter(([key]) => key !== 'Jumlah');
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">{icon} {title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Kategori</TableHead>
-                            <TableHead className="text-right">Jumlah</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {entries.map(([key, value]) => (
-                            <TableRow key={key}>
-                                <TableCell>{key}</TableCell>
-                                <TableCell className="text-right">{value}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                    <TableFooter>
-                         <TableRow>
-                            <TableCell className="font-bold">Jumlah</TableCell>
-                            <TableCell className="text-right font-bold">{total}</TableCell>
-                        </TableRow>
-                    </TableFooter>
-                </Table>
-            </CardContent>
-        </Card>
-    )
-};
 
 
 export default function DashboardPage() {
@@ -240,13 +202,22 @@ export default function DashboardPage() {
               </Alert>
             ) : analysis ? (
               <div className="space-y-6">
-                {/* Ringkasan Demografi */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <SummaryTable title="Pendidikan" data={analysis.summaryTables.education} icon={<School />} />
-                    <SummaryTable title="Pekerjaan" data={analysis.summaryTables.occupation} icon={<Briefcase />} />
-                    <SummaryTable title="Jenis Kelamin" data={analysis.summaryTables.gender} icon={<Users2 />} />
-                    <SummaryTable title="Kelompok Umur" data={analysis.summaryTables.ageGroup} icon={<User />} />
-                </div>
+                
+                {/* Infografis Demografi */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Infografis Demografi Pasien</CardTitle>
+                        <CardDescription>Visualisasi data demografi berdasarkan filter yang dipilih.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-8">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <DemographicChart title="Pendidikan" data={analysis.summaryTables.education} />
+                            <DemographicChart title="Pekerjaan" data={analysis.summaryTables.occupation} />
+                            <DemographicChart title="Jenis Kelamin" data={analysis.summaryTables.gender} />
+                            <DemographicChart title="Kelompok Umur" data={analysis.summaryTables.ageGroup} />
+                        </div>
+                    </CardContent>
+                </Card>
 
                 <div className="border-t pt-6 mt-6"></div>
                 
