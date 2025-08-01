@@ -165,9 +165,25 @@ export function SurveyForm() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
+  const adultTeethIds = [
+    ...[18, 17, 16, 15, 14, 13, 12, 11],
+    ...[21, 22, 23, 24, 25, 26, 27, 28],
+    ...[31, 32, 33, 34, 35, 36, 37, 38],
+    ...[41, 42, 43, 44, 45, 46, 47, 48],
+  ];
+
+  const defaultOdontogram = adultTeethIds.reduce((acc, id) => {
+    acc[`tooth-${id}`] = '0';
+    return acc;
+  }, {} as Record<string, string>);
+
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(surveySchema),
-    defaultValues: allQuestions.reduce((acc, q) => ({...acc, [q.id]: undefined}), {})
+    defaultValues: {
+      ...allQuestions.reduce((acc, q) => ({...acc, [q.id]: undefined}), {}),
+      province: 'Jawa Barat',
+      'odontogram-chart': defaultOdontogram,
+    }
   });
 
   const selectedProvince = form.watch('province');
@@ -176,11 +192,19 @@ export function SurveyForm() {
   useEffect(() => {
     if (selectedProvince) {
       setCities(getCitiesByProvince(selectedProvince));
-      form.setValue('city', '');
+      // Don't reset city if the default province is selected initially
+      // form.setValue('city', '');
     } else {
       setCities([]);
     }
   }, [selectedProvince, form]);
+  
+  useEffect(() => {
+     if(form.formState.isDirty || form.formState.isSubmitted) return;
+     if (selectedProvince === 'Jawa Barat') {
+       setCities(getCitiesByProvince('Jawa Barat'));
+     }
+  }, [selectedProvince, form.formState.isDirty, form.formState.isSubmitted])
 
 
   const onSubmit = (data: SurveyFormData) => {
@@ -235,7 +259,10 @@ export function SurveyForm() {
                       field={field}
                       options={provinces.map(p => p.name)}
                       placeholder="Pilih Provinsi..."
-                      onValueChange={(value) => form.setValue('province', value)}
+                      onValueChange={(value) => {
+                        form.setValue('province', value)
+                        form.setValue('city', '')
+                      }}
                     />
                   )}
                 />
