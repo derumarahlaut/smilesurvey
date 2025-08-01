@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useParams } from 'next/navigation';
+import { OdontogramDisplay } from '@/components/odontogram-display';
 
 const toothStatusCodeMap: Record<string, string> = {
     // Gigi Tetap
@@ -290,6 +291,11 @@ export default function ViewPatientPage() {
                         </div>
                          <Separator className="my-6" />
                          <div>
+                            <h4 className="mb-4 font-medium text-center">Odontogram Pasien</h4>
+                             <OdontogramDisplay patientData={patient} />
+                         </div>
+                         <Separator className="my-6" />
+                         <div>
                             <h4 className="mb-2 font-medium">Status Gigi Geligi</h4>
                             <div className="flex flex-col gap-2">
                                 {Object.entries(patient)
@@ -387,5 +393,3 @@ export default function ViewPatientPage() {
     </main>
   );
 }
-
-    
