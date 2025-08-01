@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,9 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { allQuestions } from '@/lib/survey-data';
-import { submitSurvey } from '@/app/actions';
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { provinces, getCitiesByProvince } from '@/lib/location-data';
@@ -160,18 +158,7 @@ const DateOfBirthInput = ({ control, name }: { control: any, name: string }) => 
     );
 };
 
-export function SurveyForm({ 
-  onSurveySubmit,
-  setIsLoading,
-  onInteraction
-}: { 
-  onSurveySubmit: (tips: string[]) => void;
-  setIsLoading: (loading: boolean) => void;
-  onInteraction: () => void;
-}) {
-  const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
-
+export function SurveyForm() {
   const adultTeethIds = [
     ...[18, 17, 16, 15, 14, 13, 12, 11],
     ...[21, 22, 23, 24, 25, 26, 27, 28],
@@ -195,54 +182,6 @@ export function SurveyForm({
 
   const selectedProvince = form.watch('province');
   const [cities, setCities] = useState<string[]>([]);
-  
-  const watchedData = form.watch();
-
-  useEffect(() => {
-    if (form.formState.isDirty) {
-      onInteraction();
-      setIsLoading(true);
-
-      const handler = setTimeout(() => {
-        const data = form.getValues();
-        startTransition(async () => {
-          let birthDate = '';
-          if (data['birth-date'] && data['birth-date'].year && data['birth-date'].month && data['birth-date'].day) {
-            const { year, month, day } = data['birth-date'];
-            birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          }
-
-          const transformedData = {
-            ...data,
-            'birth-date': birthDate
-          }
-          
-          const odontogramData = form.getValues('odontogram-chart');
-          const combinedData = { ...transformedData, 'odontogram-chart': odontogramData };
-
-          const result = await submitSurvey(combinedData);
-          
-          if (result?.error) {
-            toast({
-              title: "Terjadi Kesalahan",
-              description: result.error,
-              variant: "destructive",
-            });
-            onSurveySubmit([]);
-          } else if (result?.tips) {
-            onSurveySubmit(result.tips);
-          }
-          setIsLoading(false);
-        });
-      }, 1500); // 1.5 second debounce delay
-
-      return () => {
-        clearTimeout(handler);
-        // Do not set loading to false here, to avoid flashing
-      };
-    }
-  }, [JSON.stringify(watchedData), form.formState.isDirty]);
-
 
   useEffect(() => {
     if (selectedProvince) {

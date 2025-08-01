@@ -10,6 +10,8 @@ const getQuestionText = (id: string) => {
   return question ? question.question : id;
 }
 
+// This function is currently not used on the main survey page, 
+// but is kept for potential use in a future dashboard/reporting page.
 export async function submitSurvey(formData: Record<string, any>) {
   try {
     const surveyResponses: Record<string, any> = {};
