@@ -1,10 +1,6 @@
 
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
-
-// This is the base AI configuration.
-// In server actions, we will re-initialize with the API key to ensure it's available.
-export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-2.0-flash',
-});
+// This file is intentionally left blank.
+// Genkit will be initialized locally within each server action
+// to ensure API keys and other configurations are loaded correctly
+// in the Next.js server action context.
+export {};

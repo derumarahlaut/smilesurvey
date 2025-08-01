@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -6,8 +7,7 @@
  * The flow takes survey responses as input and returns personalized tips to improve oral hygiene.
  * It exports the `generatePersonalizedTips` function, the `PersonalizedTipsInput` type, and the `PersonalizedTipsOutput` type.
  */
-
-import {ai} from '@/ai/genkit';
+import type { Genkit } from 'genkit';
 import {z} from 'genkit';
 
 const PersonalizedTipsInputSchema = z.object({
@@ -20,32 +20,32 @@ const PersonalizedTipsOutputSchema = z.object({
 });
 export type PersonalizedTipsOutput = z.infer<typeof PersonalizedTipsOutputSchema>;
 
-export async function generatePersonalizedTips(input: PersonalizedTipsInput): Promise<PersonalizedTipsOutput> {
+export async function generatePersonalizedTips(ai: Genkit, input: PersonalizedTipsInput): Promise<PersonalizedTipsOutput> {
+  const prompt = ai.definePrompt({
+    name: 'personalizedTipsPrompt',
+    input: {schema: PersonalizedTipsInputSchema},
+    output: {schema: PersonalizedTipsOutputSchema},
+    prompt: `You are a helpful dental health advisor. Based on the following survey responses, provide personalized dental care tips to the user.
+
+  Survey Responses:
+  {{#each (Object.entries surveyResponses)}}
+    {{@key}}: {{this.[1]}}
+  {{/each}}
+  
+  Tips:`,
+  });
+  
+  const generatePersonalizedTipsFlow = ai.defineFlow(
+    {
+      name: 'generatePersonalizedTipsFlow',
+      inputSchema: PersonalizedTipsInputSchema,
+      outputSchema: PersonalizedTipsOutputSchema,
+    },
+    async input => {
+      const {output} = await prompt(input);
+      return output!;
+    }
+  );
+
   return generatePersonalizedTipsFlow(input);
 }
-
-const prompt = ai.definePrompt({
-  name: 'personalizedTipsPrompt',
-  input: {schema: PersonalizedTipsInputSchema},
-  output: {schema: PersonalizedTipsOutputSchema},
-  prompt: `You are a helpful dental health advisor. Based on the following survey responses, provide personalized dental care tips to the user.
-
-Survey Responses:
-{{#each (Object.entries surveyResponses)}}
-  {{@key}}: {{this.[1]}}
-{{/each}}
-
-Tips:`,
-});
-
-const generatePersonalizedTipsFlow = ai.defineFlow(
-  {
-    name: 'generatePersonalizedTipsFlow',
-    inputSchema: PersonalizedTipsInputSchema,
-    outputSchema: PersonalizedTipsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);

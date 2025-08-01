@@ -10,6 +10,18 @@ import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format, differenceInYears, parse } from 'date-fns';
 
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
+
+function initializeGenkit() {
+    return genkit({
+        plugins: [
+            googleAI({ apiKey: process.env.GEMINI_API_KEY }),
+        ],
+        model: 'googleai/gemini-2.0-flash',
+    });
+}
+
 
 async function getNextPatientSequence(idPrefix: string): Promise<string> {
   const patientsRef = collection(db, "patients");
@@ -223,13 +235,14 @@ export async function saveSurvey(formData: Record<string, any>, existingExamId?:
 
 export async function submitSurveyForTips(formData: Record<string, any>) {
   try {
+    const ai = initializeGenkit();
     const surveyResponses = processFormData(formData);
 
     if (Object.keys(surveyResponses).length === 0) {
       return { error: 'No responses provided.' };
     }
 
-    const result = await generatePersonalizedTips({ surveyResponses });
+    const result = await generatePersonalizedTips(ai, { surveyResponses });
 
     if (!result || !result.tips || result.tips.length === 0) {
       return { error: 'Could not generate personalized tips at this time.' };
@@ -396,6 +409,7 @@ export async function getDashboardAnalysis(filters: {
   dateRange?: { from?: Date; to?: Date };
 }) {
   try {
+    const ai = initializeGenkit();
     let patientQuery: any = collection(db, 'patients');
     
     const queryConstraints = [];
@@ -488,7 +502,7 @@ export async function getDashboardAnalysis(filters: {
     });
 
 
-    const result = await analyzeDentalData({ patients: patientList, language: filters.language, summaryTables });
+    const result = await analyzeDentalData(ai, { patients: patientList, language: filters.language, summaryTables });
 
     if (!result) {
         return { error: 'Gagal menganalisis data. AI tidak memberikan respons.' };
