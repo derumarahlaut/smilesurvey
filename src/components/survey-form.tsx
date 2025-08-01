@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { provinces, getCitiesByProvince } from '@/lib/location-data';
 import { Odontogram } from '@/components/odontogram';
 import { Button } from './ui/button';
+import { Calendar } from './ui/calendar';
 
 const createSchema = () => {
   const schemaObject = allQuestions.reduce((acc, q) => {
@@ -34,12 +36,17 @@ const createSchema = () => {
         validator = z.string().optional();
         break;
       case 'date':
-        // For date, we can have separate fields
-        validator = z.object({
-          day: z.string().optional(),
-          month: z.string().optional(),
-          year: z.string().optional(),
-        }).optional();
+      case 'datetime':
+        // For date, we can have separate fields or a single string
+        if (q.id === 'birth-date') {
+            validator = z.object({
+              day: z.string().optional(),
+              month: z.string().optional(),
+              year: z.string().optional(),
+            }).optional();
+        } else {
+            validator = z.date().optional();
+        }
         break;
       case 'custom':
          validator = z.any().optional();
@@ -163,11 +170,19 @@ export function SurveyForm() {
     ...[18, 17, 16, 15, 14, 13, 12, 11],
     ...[21, 22, 23, 24, 25, 26, 27, 28],
     ...[31, 32, 33, 34, 35, 36, 37, 38],
-    ...[41, 42, 43, 44, 45, 46, 47, 48],
+    ...[48, 47, 46, 45, 44, 43, 42, 41],
   ];
+  
+  const childTeethIds = [
+      ...[55, 54, 53, 52, 51],
+      ...[61, 62, 63, 64, 65],
+      ...[71, 72, 73, 74, 75],
+      ...[85, 84, 83, 82, 81],
+  ]
 
-  const defaultOdontogram = adultTeethIds.reduce((acc, id) => {
-    acc[`tooth-${id}`] = '0';
+  const defaultOdontogram = [...adultTeethIds, ...childTeethIds].reduce((acc, id) => {
+    const isAdult = adultTeethIds.includes(id);
+    acc[`tooth-${id}`] = isAdult ? '0' : 'A';
     return acc;
   }, {} as Record<string, string>);
 
@@ -178,15 +193,19 @@ export function SurveyForm() {
       province: 'Jawa Barat',
       agency: 'Dinas Kesehatan Provinsi Jawa Barat',
       'odontogram-chart': defaultOdontogram,
+      'exam-date': new Date(),
     }
   });
 
   const selectedProvince = form.watch('province');
+  const selectedCity = form.watch('city');
+  const examDate = form.watch('exam-date');
   const [cities, setCities] = useState<string[]>([]);
 
   useEffect(() => {
     if (selectedProvince) {
-      setCities(getCitiesByProvince(selectedProvince));
+      const cityList = getCitiesByProvince(selectedProvince);
+      setCities(cityList);
       // Don't reset city if the default province is selected initially
       if (form.formState.isDirty) {
         form.setValue('city', '');
@@ -201,13 +220,27 @@ export function SurveyForm() {
      if (selectedProvince === 'Jawa Barat') {
        setCities(getCitiesByProvince('Jawa Barat'));
      }
-  }, [selectedProvince, form.formState.isDirty, form.formState.isSubmitted])
+  }, [selectedProvince, form.formState.isDirty, form.formState.isSubmitted]);
+
+  useEffect(() => {
+    const provinceIndex = provinces.findIndex(p => p.name === selectedProvince);
+    const provinceCode = provinceIndex > -1 ? String(provinceIndex + 1).padStart(2, '0') : 'XX';
+
+    const cityIndex = cities.findIndex(c => c === selectedCity);
+    const cityCode = cityIndex > -1 ? String(cityIndex + 1).padStart(2, '0') : 'XX';
+    
+    const dateCode = examDate ? format(examDate, 'yyyyMMdd') : 'YYYYMMDD';
+
+    const uniqueId = `${provinceCode}-${cityCode}-${dateCode}-`;
+    form.setValue('exam-id', uniqueId);
+
+  }, [selectedProvince, selectedCity, examDate, form, cities]);
   
-  const FormField = ({ id, children }: { id: string, children: React.ReactNode }) => {
+  const FormField = ({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) => {
       const question = allQuestions.find(q => q.id === id);
       if (!question) return null;
       return (
-          <div className="space-y-2">
+          <div className={cn("space-y-2", className)}>
               <Label htmlFor={id}>{question.question}</Label>
               {children}
           </div>
@@ -262,9 +295,41 @@ export function SurveyForm() {
               </FormField>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField id="exam-id">
-                 <Controller name="exam-id" control={form.control} render={({ field }) => <Input {...field} id="exam-id" />} />
+               <FormField id="exam-date">
+                    <Controller
+                        name="exam-date"
+                        control={form.control}
+                        render={({field}) => (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4"/>
+                                        {field.value ? format(field.value, "PPP") : <span>Pilih tanggal</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        )}
+                    />
+                </FormField>
+                <FormField id="exam-id" className="md:col-span-2">
+                 <Controller name="exam-id" control={form.control} render={({ field }) => <Input {...field} id="exam-id" readOnly className="bg-gray-100" />} />
               </FormField>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField id="name">
                  <Controller name="name" control={form.control} render={({ field }) => <Input {...field} id="name" />} />
               </FormField>

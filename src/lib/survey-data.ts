@@ -2,14 +2,15 @@
 export type Question = {
   id: string;
   question: string;
-  type: 'text' | 'number' | 'radio' | 'select' | 'date' | 'custom';
+  type: 'text' | 'number' | 'radio' | 'select' | 'date' | 'custom' | 'datetime';
   options?: string[];
   placeholder?: string;
 };
 
 export const allQuestions: Question[] = [
     // Based on the single-page layout
-    { id: 'exam-id', question: 'Nomor Urut', type: 'number' },
+    { id: 'exam-id', question: 'Nomor Urut', type: 'text' },
+    { id: 'exam-date', question: 'Tanggal Pemeriksaan', type: 'datetime'},
     { id: 'province', question: 'Provinsi', type: 'select' },
     { id: 'city', question: 'Kota/Kabupaten', type: 'select' },
     { id: 'agency', question: 'Instansi Penyelenggara Survey', type: 'text' },

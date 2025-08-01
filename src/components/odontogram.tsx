@@ -39,7 +39,7 @@ const adultTeeth = {
 const childTeeth = {
     upperRight: [55, 54, 53, 52, 51],
     upperLeft: [61, 62, 63, 64, 65],
-    lowerLeft: [71, 72, 73, 74, 75],
+    lowerLeft: [75, 74, 73, 72, 71],
     lowerRight: [85, 84, 83, 82, 81],
 };
 
@@ -53,7 +53,6 @@ const ToothSelect = ({ control, name, label, type = 'permanent' }: { control: an
     <Controller
       name={`odontogram-chart.${name}`}
       control={control}
-      defaultValue=""
       render={({ field }) => (
         <Select onValueChange={field.onChange} value={field.value}>
           <SelectTrigger className="w-[60px] h-8 bg-yellow-200 border-gray-400">
@@ -169,9 +168,9 @@ export function Odontogram({ form }: { form: any }) {
             <span>RA Kiri</span>
           </div>
           <ToothRow control={control} teethRight={adultTeeth.upperRight} teethLeft={adultTeeth.upperLeft} type="permanent" />
-          <ToothRow control={control} teethRight={childTeeth.upperRight} teethLeft={childTeeth.upperLeft} type="primary" />
+          <ToothRow control={control} teethRight={childTeeth.upperRight.slice().reverse()} teethLeft={childTeeth.upperLeft} type="primary" />
           <div className="border-t-2 border-black my-2"></div>
-          <ToothRow control={control} teethRight={childTeeth.lowerRight} teethLeft={childTeeth.lowerLeft} type="primary" />
+          <ToothRow control={control} teethRight={childTeeth.lowerRight.slice().reverse()} teethLeft={childTeeth.lowerLeft} type="primary" />
           <ToothRow control={control} teethRight={adultTeeth.lowerRight} teethLeft={adultTeeth.lowerLeft} type="permanent" />
           <div className="flex justify-between text-sm font-bold px-4">
             <span>RB Kanan</span>
@@ -181,7 +180,7 @@ export function Odontogram({ form }: { form: any }) {
       </div>
       
       {/* Score Tables */}
-      <div className="flex justify-center gap-8 items-start pt-4 border-t">
+      <div className="flex justify-center gap-8 items-start py-4 border-t">
         <ScoreTable title="def-t" scores={scores.defScores} />
         <ScoreTable title="DMF-T" scores={scores.dmfScores} />
       </div>
