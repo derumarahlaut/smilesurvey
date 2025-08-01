@@ -112,25 +112,33 @@ export async function saveSurvey(formData: Record<string, any>) {
   }
 
   try {
-    // We are converting the date object to a string before saving
-    if (formData['exam-date'] instanceof Date) {
-        formData['exam-date'] = formData['exam-date'].toISOString().split('T')[0];
+    const dataToSave = { ...formData };
+    
+    // Convert date objects to strings before saving to Firestore
+    if (dataToSave['exam-date'] instanceof Date) {
+        dataToSave['exam-date'] = dataToSave['exam-date'].toISOString().split('T')[0];
     }
-    if (formData['birth-date']) {
-        const { day, month, year } = formData['birth-date'];
+
+    if (dataToSave['birth-date'] && typeof dataToSave['birth-date'] === 'object') {
+        const { day, month, year } = dataToSave['birth-date'];
         if (day && month && year) {
-            formData['birth-date'] = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            if (!isNaN(date.getTime())) {
+              dataToSave['birth-date'] = date.toISOString().split('T')[0];
+            } else {
+              delete dataToSave['birth-date']; // or handle as invalid date
+            }
         } else {
-             delete formData['birth-date'];
+             delete dataToSave['birth-date'];
         }
     }
 
-    await setDoc(doc(db, "patients", examId), formData);
+    await setDoc(doc(db, "patients", examId), dataToSave);
     revalidatePath('/master');
     return { success: true, examId };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error saving survey:", error);
-    return { error: 'Gagal menyimpan data ke database.' };
+    return { error: `Gagal menyimpan data ke database: ${error.message}` };
   }
 }
 
