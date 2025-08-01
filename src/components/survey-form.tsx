@@ -1,16 +1,14 @@
 
 "use client";
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { provinces, getCitiesByProvince } from '@/lib/location-data';
 import { Odontogram } from '@/components/odontogram';
+import { Button } from './ui/button';
 
 const createSchema = () => {
   const schemaObject = allQuestions.reduce((acc, q) => {
@@ -161,7 +160,15 @@ const DateOfBirthInput = ({ control, name }: { control: any, name: string }) => 
     );
 };
 
-export function SurveyForm({ onSurveySubmit }: { onSurveySubmit: (tips: string[]) => void }) {
+export function SurveyForm({ 
+  onSurveySubmit,
+  setIsLoading,
+  onInteraction
+}: { 
+  onSurveySubmit: (tips: string[]) => void;
+  setIsLoading: (loading: boolean) => void;
+  onInteraction: () => void;
+}) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -188,12 +195,62 @@ export function SurveyForm({ onSurveySubmit }: { onSurveySubmit: (tips: string[]
 
   const selectedProvince = form.watch('province');
   const [cities, setCities] = useState<string[]>([]);
+  
+  const watchedData = form.watch();
+
+  useEffect(() => {
+    if (form.formState.isDirty) {
+      onInteraction();
+      setIsLoading(true);
+
+      const handler = setTimeout(() => {
+        const data = form.getValues();
+        startTransition(async () => {
+          let birthDate = '';
+          if (data['birth-date'] && data['birth-date'].year && data['birth-date'].month && data['birth-date'].day) {
+            const { year, month, day } = data['birth-date'];
+            birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          }
+
+          const transformedData = {
+            ...data,
+            'birth-date': birthDate
+          }
+          
+          const odontogramData = form.getValues('odontogram-chart');
+          const combinedData = { ...transformedData, 'odontogram-chart': odontogramData };
+
+          const result = await submitSurvey(combinedData);
+          
+          if (result?.error) {
+            toast({
+              title: "Terjadi Kesalahan",
+              description: result.error,
+              variant: "destructive",
+            });
+            onSurveySubmit([]);
+          } else if (result?.tips) {
+            onSurveySubmit(result.tips);
+          }
+          setIsLoading(false);
+        });
+      }, 1500); // 1.5 second debounce delay
+
+      return () => {
+        clearTimeout(handler);
+        // Do not set loading to false here, to avoid flashing
+      };
+    }
+  }, [JSON.stringify(watchedData), form.formState.isDirty]);
+
 
   useEffect(() => {
     if (selectedProvince) {
       setCities(getCitiesByProvince(selectedProvince));
       // Don't reset city if the default province is selected initially
-      // form.setValue('city', '');
+      if (form.formState.isDirty) {
+        form.setValue('city', '');
+      }
     } else {
       setCities([]);
     }
@@ -205,42 +262,6 @@ export function SurveyForm({ onSurveySubmit }: { onSurveySubmit: (tips: string[]
        setCities(getCitiesByProvince('Jawa Barat'));
      }
   }, [selectedProvince, form.formState.isDirty, form.formState.isSubmitted])
-
-
-  const onSubmit = (data: SurveyFormData) => {
-    startTransition(async () => {
-      
-      let birthDate = '';
-      if (data['birth-date'] && data['birth-date'].year && data['birth-date'].month && data['birth-date'].day) {
-        const { year, month, day } = data['birth-date'];
-        birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      }
-
-      const transformedData = {
-        ...data,
-        'birth-date': birthDate
-      }
-      
-      const odontogramData = form.getValues('odontogram-chart');
-      const combinedData = { ...transformedData, 'odontogram-chart': odontogramData };
-
-      const result = await submitSurvey(combinedData);
-      
-      if (result?.error) {
-        toast({
-          title: "Terjadi Kesalahan",
-          description: result.error,
-          variant: "destructive",
-        });
-      } else if (result?.tips) {
-        onSurveySubmit(result.tips);
-        toast({
-          title: "Sukses!",
-          description: "Saran berhasil dibuat di bawah formulir.",
-        });
-      }
-    });
-  };
   
   const FormField = ({ id, children }: { id: string, children: React.ReactNode }) => {
       const question = allQuestions.find(q => q.id === id);
@@ -254,7 +275,7 @@ export function SurveyForm({ onSurveySubmit }: { onSurveySubmit: (tips: string[]
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <form className="space-y-8">
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField id="province">
@@ -267,8 +288,7 @@ export function SurveyForm({ onSurveySubmit }: { onSurveySubmit: (tips: string[]
                       options={provinces.map(p => p.name)}
                       placeholder="Pilih Provinsi..."
                       onValueChange={(value) => {
-                        form.setValue('province', value)
-                        form.setValue('city', '')
+                        form.setValue('province', value, { shouldDirty: true })
                       }}
                     />
                   )}
@@ -284,7 +304,7 @@ export function SurveyForm({ onSurveySubmit }: { onSurveySubmit: (tips: string[]
                       options={cities}
                       placeholder="Pilih Kota/Kabupaten..."
                       disabled={!selectedProvince}
-                      onValueChange={(value) => form.setValue('city', value)}
+                      onValueChange={(value) => form.setValue('city', value, { shouldDirty: true })}
                     />
                   )}
                 />
@@ -367,13 +387,6 @@ export function SurveyForm({ onSurveySubmit }: { onSurveySubmit: (tips: string[]
              <h3 className="text-lg font-medium">Status Gigi Geligi</h3>
             <Odontogram form={form} />
         </div>
-
-      <div className="flex justify-end">
-          <Button type="submit" disabled={isPending} size="lg">
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Lihat Hasil
-          </Button>
-      </div>
     </form>
   );
 }

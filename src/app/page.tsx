@@ -4,10 +4,12 @@
 import { useState } from 'react';
 import { SurveyForm } from '@/components/survey-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function Home() {
   const [tips, setTips] = useState<string[] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const handleSurveySubmit = (generatedTips: string[]) => {
     setTips(generatedTips);
@@ -21,11 +23,15 @@ export default function Home() {
             <CardTitle className="font-headline text-4xl">FORM PEMERIKSAAN GIGI</CardTitle>
           </CardHeader>
           <CardContent>
-            <SurveyForm onSurveySubmit={handleSurveySubmit} />
+            <SurveyForm 
+              onSurveySubmit={handleSurveySubmit} 
+              setIsLoading={setIsLoading}
+              onInteraction={() => setHasInteracted(true)}
+            />
           </CardContent>
         </Card>
 
-        {tips && (
+        {(isLoading || tips) && hasInteracted && (
           <Card className="w-full max-w-6xl shadow-xl animate-in fade-in-50">
             <CardHeader>
               <CardTitle className="font-headline text-3xl">Saran Kesehatan Gigi Untuk Anda</CardTitle>
@@ -34,14 +40,21 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
-                {tips.map((tip, index) => (
-                  <li key={index} className="flex items-start space-x-3">
-                    <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
-                    <span>{tip}</span>
-                  </li>
-                ))}
-              </ul>
+              {isLoading ? (
+                <div className="flex items-center space-x-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span>Menganalisis data Anda...</span>
+                </div>
+              ) : tips && (
+                <ul className="space-y-3">
+                  {tips.map((tip, index) => (
+                    <li key={index} className="flex items-start space-x-3">
+                      <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         )}
