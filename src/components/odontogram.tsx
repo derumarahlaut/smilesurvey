@@ -33,19 +33,27 @@ const adultTeeth = {
   upperRight: [18, 17, 16, 15, 14, 13, 12, 11],
   upperLeft: [21, 22, 23, 24, 25, 26, 27, 28],
   lowerLeft: [31, 32, 33, 34, 35, 36, 37, 38],
-  lowerRight: [48, 47, 46, 45, 44, 43, 42, 41],
+  lowerRight: [41, 42, 43, 44, 45, 46, 47, 48],
 };
 
 const childTeeth = {
     upperRight: [55, 54, 53, 52, 51],
     upperLeft: [61, 62, 63, 64, 65],
     lowerLeft: [75, 74, 73, 72, 71],
-    lowerRight: [85, 84, 83, 82, 81],
+    lowerRight: [81, 82, 83, 84, 85],
 };
 
 const allAdultTeethIds = Object.values(adultTeeth).flat();
 const allChildTeethIds = Object.values(childTeeth).flat();
 
+const referralOptions = [
+    'Puskesmas',
+    'RS Umum/RSGM/RSKGM',
+    'Klinik Pratama',
+    'Klinik Utama',
+    'Praktik Mandiri',
+    'Lain-lain'
+];
 
 const ToothSelect = ({ control, name, label, type = 'permanent' }: { control: any; name: string; label: string, type?: 'permanent' | 'primary' }) => (
   <div className="flex flex-col items-center">
@@ -101,6 +109,9 @@ const ScoreTable = ({ title, scores }: { title: string, scores: { label: string,
 export function Odontogram({ form }: { form: any }) {
   const { control } = form;
   const odontogramData = useWatch({ control, name: 'odontogram-chart' });
+  const referralStatus = useWatch({ control, name: 'odontogram-chart.referral' });
+  const referralType = useWatch({ control, name: 'odontogram-chart.referralType' });
+
 
   const scores = useMemo(() => {
     const dmf = { D: 0, M: 0, F: 0 };
@@ -171,7 +182,7 @@ export function Odontogram({ form }: { form: any }) {
           <ToothRow control={control} teethRight={childTeeth.upperRight.slice().reverse()} teethLeft={childTeeth.upperLeft} type="primary" />
           <div className="border-t-2 border-black my-2"></div>
           <ToothRow control={control} teethRight={childTeeth.lowerRight.slice().reverse()} teethLeft={childTeeth.lowerLeft} type="primary" />
-          <ToothRow control={control} teethRight={adultTeeth.lowerRight} teethLeft={adultTeeth.lowerLeft} type="permanent" />
+          <ToothRow control={control} teethRight={adultTeeth.lowerRight.slice().reverse()} teethLeft={adultTeeth.lowerLeft} type="permanent" />
           <div className="flex justify-between text-sm font-bold px-4">
             <span>RB Kanan</span>
             <span>RB Kiri</span>
@@ -242,26 +253,47 @@ export function Odontogram({ form }: { form: any }) {
           </div>
           <div className="space-y-2">
               <Label>Rujukan</Label>
-              <Controller
-                  name="odontogram-chart.referral"
-                  control={control}
-                  render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <SelectTrigger>
-                              <SelectValue placeholder="Pilih status rujukan" />
-                          </SelectTrigger>
-                          <SelectContent>
-                              <SelectItem value="0">0 = tidak perlu rujukan</SelectItem>
-                              <SelectItem value="1">1 = rujukan ke:</SelectItem>
-                          </SelectContent>
-                      </Select>
-                  )} />
-              <Controller
-                  name="odontogram-chart.referralLocation"
-                  control={control}
-                  render={({ field }) => (
-                     <Input {...field} placeholder="Lokasi rujukan" className="mt-2" />
-                  )} />
+                <Controller
+                    name="odontogram-chart.referral"
+                    control={control}
+                    render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Pilih status rujukan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="0">0 = tidak perlu rujukan</SelectItem>
+                                <SelectItem value="1">1 = perlu rujukan</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )} />
+                {referralStatus === '1' && (
+                    <div className="space-y-2 mt-2">
+                        <Controller
+                            name="odontogram-chart.referralType"
+                            control={control}
+                            render={({ field }) => (
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih lokasi rujukan..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {referralOptions.map(opt => (
+                                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )} />
+                        {referralType === 'Lain-lain' && (
+                             <Controller
+                                name="odontogram-chart.referralLocation"
+                                control={control}
+                                render={({ field }) => (
+                                   <Input {...field} placeholder="Sebutkan lokasi rujukan lain" className="mt-2" />
+                                )} />
+                        )}
+                    </div>
+                )}
           </div>
       </div>
     </div>

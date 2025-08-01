@@ -92,8 +92,12 @@ export async function submitSurvey(formData: Record<string, any>) {
       if (clinicalCheck.referral) {
         const referralMap: Record<string, string> = { '0': 'tidak perlu rujukan', '1': 'perlu rujukan' };
         surveyResponses['Rujukan'] = referralMap[clinicalCheck.referral] || clinicalCheck.referral;
-        if (clinicalCheck.referral === '1' && clinicalCheck.referralLocation) {
-          surveyResponses['Lokasi Rujukan'] = clinicalCheck.referralLocation;
+        if (clinicalCheck.referral === '1') {
+            if (clinicalCheck.referralType === 'Lain-lain') {
+                surveyResponses['Lokasi Rujukan'] = `Lain-lain: ${clinicalCheck.referralLocation || ''}`;
+            } else {
+                 surveyResponses['Lokasi Rujukan'] = clinicalCheck.referralType;
+            }
         }
       }
     }
