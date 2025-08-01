@@ -26,9 +26,12 @@ async function getNextPatientSequence(idPrefix: string): Promise<string> {
   if (querySnapshot.empty) {
     return "001";
   } else {
-    const lastExamId = querySnapshot.docs[0].id;
+    const lastExamId = querySnapshot.docs[0].data()['exam-id'];
     const parts = lastExamId.split('-');
     const lastSequence = parseInt(parts[parts.length - 1], 10);
+    if (isNaN(lastSequence)) {
+      return "001";
+    }
     const nextSequence = lastSequence + 1;
     return String(nextSequence).padStart(3, '0');
   }
