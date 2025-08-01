@@ -84,7 +84,7 @@ function SearchableSelect({ field, options, placeholder, disabled, onValueChange
                     disabled={disabled}
                 >
                     {field.value
-                        ? options.find((option) => option.toLowerCase() === field.value.toLowerCase())
+                        ? options.find((option) => option.toLowerCase() === field.value.toLowerCase()) || placeholder
                         : placeholder}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -119,7 +119,7 @@ function SearchableSelect({ field, options, placeholder, disabled, onValueChange
                 </Command>
             </PopoverContent>
         </Popover>
-    )
+    );
 }
 
 const DateOfBirthInput = ({ control, name }: { control: any, name: string }) => {
