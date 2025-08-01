@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { allQuestions } from '@/lib/survey-data';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { OdontogramDisplay } from '@/components/odontogram-display';
 
 const toothStatusCodeMap: Record<string, string> = {
@@ -60,11 +60,10 @@ const DataField = ({ label, value, children }: { label: string; value?: string |
 
 const getLabel = (key: string) => allQuestions.find(q => q.id === key)?.question || key;
 
-const VerificationDialog = ({ examId, patient }: { examId: string, patient: any }) => {
+const VerificationDialog = ({ examId, patient, onVerifySuccess }: { examId: string, patient: any, onVerifySuccess: () => void }) => {
     const [verifierName, setVerifierName] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const { toast } = useToast();
-    const router = useRouter();
 
     const handleVerify = async () => {
         if (!verifierName.trim()) {
@@ -90,8 +89,7 @@ const VerificationDialog = ({ examId, patient }: { examId: string, patient: any 
                 title: 'Verifikasi Berhasil',
                 description: `Data pasien ${examId} telah diverifikasi oleh ${verifierName}.`,
             });
-            // Force a reload of the current page to show updated verification status
-            router.refresh(); 
+            onVerifySuccess(); // Panggil callback untuk memuat ulang data
         }
     };
 
@@ -138,20 +136,23 @@ export default function ViewPatientPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!examId) return;
-    const fetchPatient = async () => {
+  const fetchPatient = useCallback(async () => {
+      if (!examId) return;
       setLoading(true);
       const { patient: fetchedPatient, error: fetchError } = await getPatient(examId);
       if (fetchError) {
-        setError(fetchError);
+          setError(fetchError);
+          setPatient(null);
       } else {
-        setPatient(fetchedPatient);
+          setPatient(fetchedPatient);
+          setError(null);
       }
       setLoading(false);
-    };
-    fetchPatient();
   }, [examId]);
+
+  useEffect(() => {
+    fetchPatient();
+  }, [fetchPatient]);
 
 
   const demographicFields = [
@@ -350,7 +351,7 @@ export default function ViewPatientPage() {
                                 </p>
                             </div>
                         </div>
-                        <VerificationDialog examId={examId} patient={patient} />
+                        <VerificationDialog examId={examId} patient={patient} onVerifySuccess={fetchPatient} />
                     </div>
                 )}
             </div>
