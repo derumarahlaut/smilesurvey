@@ -24,52 +24,7 @@ import { Calendar } from './ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { saveSurvey } from '@/app/actions';
 
-const createSchema = () => {
-  const schemaObject = allQuestions.reduce((acc, q) => {
-    let validator;
-    switch (q.type) {
-      case 'text':
-      case 'textarea':
-        validator = z.string().optional();
-        break;
-      case 'number':
-        validator = z.string().optional();
-        break;
-      case 'radio':
-      case 'select':
-        validator = z.string().optional();
-        break;
-      case 'date':
-      case 'datetime':
-        // For date, we can have separate fields or a single string
-        if (q.id === 'birth-date') {
-            validator = z.object({
-              day: z.string().optional(),
-              month: z.string().optional(),
-              year: z.string().optional(),
-            }).optional();
-        } else {
-            validator = z.date().optional();
-        }
-        break;
-      case 'custom':
-         validator = z.any().optional();
-        break;
-      default:
-        validator = z.any().optional();
-    }
-    acc[q.id] = validator;
-    return acc;
-  }, {} as Record<string, z.ZodType<any, any>>);
-  
-  // Make all fields optional for single page submit
-  return z.object(schemaObject).partial();
-};
-
-
-const surveySchema = createSchema();
-type SurveyFormData = z.infer<typeof surveySchema>;
-
+// Define the searchable select component outside the main component
 function SearchableSelect({ field, options, placeholder, disabled, onValueChange }: { field: any, options: string[], placeholder: string, disabled?: boolean, onValueChange: (value: string) => void }) {
     const [open, setOpen] = useState(false);
 
@@ -122,6 +77,58 @@ function SearchableSelect({ field, options, placeholder, disabled, onValueChange
     );
 }
 
+
+const createSchema = () => {
+  const schemaObject = allQuestions.reduce((acc, q) => {
+    let validator;
+    switch (q.type) {
+      case 'text':
+      case 'textarea':
+        validator = z.string().optional();
+        break;
+      case 'number':
+        validator = z.string().optional();
+        break;
+      case 'radio':
+      case 'select':
+        validator = z.string().optional();
+        break;
+      case 'date':
+      case 'datetime':
+        // For date, we can have separate fields or a single string
+        if (q.id === 'birth-date') {
+            validator = z.object({
+              day: z.string().optional(),
+              month: z.string().optional(),
+              year: z.string().optional(),
+            }).optional();
+        } else {
+            validator = z.date().optional();
+        }
+        break;
+      case 'custom':
+         validator = z.any().optional();
+        break;
+      default:
+        validator = z.any().optional();
+    }
+    acc[q.id] = validator;
+    return acc;
+  }, {} as Record<string, z.ZodType<any, any>>);
+  
+  // Add exam-id-suffix
+  schemaObject['exam-id-suffix'] = z.string().min(1, 'Nomor urut pasien harus diisi');
+
+  // Make all fields optional for single page submit
+  return z.object(schemaObject).partial();
+};
+
+
+const surveySchema = createSchema();
+type SurveyFormData = z.infer<typeof surveySchema>;
+
+
+
 const DateOfBirthInput = ({ control, name }: { control: any, name: string }) => {
     const years = Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i);
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -173,6 +180,7 @@ export function SurveyForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [examIdPrefix, setExamIdPrefix] = useState('XX-XX-YYYYMMDD-');
 
   const adultTeethIds = [
     ...[18, 17, 16, 15, 14, 13, 12, 11],
@@ -204,6 +212,7 @@ export function SurveyForm() {
       agency: 'Dinas Kesehatan Provinsi Jawa Barat',
       'odontogram-chart': defaultOdontogram,
       'exam-date': new Date(),
+      'exam-id-suffix': '',
        'birth-date': { day: '', month: '', year: '' }
     }
   });
@@ -217,7 +226,12 @@ export function SurveyForm() {
   
   const onSubmit = async (data: SurveyFormData) => {
     setIsSubmitting(true);
-    const result = await saveSurvey(data);
+
+    const fullExamId = `${examIdPrefix}${data['exam-id-suffix']}`;
+    const dataToSave = { ...data, 'exam-id': fullExamId };
+    delete dataToSave['exam-id-suffix'];
+    
+    const result = await saveSurvey(dataToSave);
     setIsSubmitting(false);
 
     if (result.error) {
@@ -265,11 +279,9 @@ export function SurveyForm() {
     
     const dateCode = examDate ? format(examDate, 'yyyyMMdd') : 'YYYYMMDD';
 
-    const lastPart = form.getValues('exam-id')?.split('-')[3] || '';
-    const uniqueId = `${provinceCode}-${cityCode}-${dateCode}-${lastPart}`;
-    form.setValue('exam-id', uniqueId);
+    setExamIdPrefix(`${provinceCode}-${cityCode}-${dateCode}-`);
 
-  }, [selectedProvince, selectedCity, examDate, form, cities]);
+  }, [selectedProvince, selectedCity, examDate, cities]);
   
   const FormField = ({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) => {
       const question = allQuestions.find(q => q.id === id);
@@ -360,9 +372,30 @@ export function SurveyForm() {
                         )}
                     />
                 </FormField>
-                <FormField id="exam-id" className="md:col-span-2">
-                 <Controller name="exam-id" control={form.control} render={({ field }) => <Input {...field} id="exam-id" placeholder="Auto-generated, tambahkan nomor urut manual di akhir" />} />
-              </FormField>
+                <div className="md:col-span-2">
+                  <FormField id="exam-id">
+                    <div className="flex items-center gap-2">
+                        <Input 
+                            value={examIdPrefix}
+                            readOnly 
+                            className="flex-grow bg-muted"
+                        />
+                        <Controller 
+                            name="exam-id-suffix" 
+                            control={form.control} 
+                            render={({ field }) => (
+                                <Input 
+                                    {...field}
+                                    id="exam-id-suffix" 
+                                    placeholder="001" 
+                                    className="w-24" 
+                                />
+                            )}
+                        />
+                    </div>
+                     {form.formState.errors['exam-id-suffix'] && <p className="text-sm font-medium text-destructive">{form.formState.errors['exam-id-suffix'].message}</p>}
+                  </FormField>
+                </div>
           </div>
           
            <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
