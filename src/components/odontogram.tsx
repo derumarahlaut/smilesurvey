@@ -1,10 +1,11 @@
 
 "use client";
 
-import { Controller } from 'react-hook-form';
+import { Controller, useWatch } from 'react-hook-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useMemo } from 'react';
 
 const toothStatusCode = {
   permanent: [
@@ -42,6 +43,10 @@ const childTeeth = {
     lowerRight: [85, 84, 83, 82, 81].reverse(),
 };
 
+const allAdultTeethIds = Object.values(adultTeeth).flat();
+const allChildTeethIds = Object.values(childTeeth).flat();
+
+
 const ToothSelect = ({ control, name, label, type = 'permanent' }: { control: any; name: string; label: string, type?: 'permanent' | 'primary' }) => (
   <div className="flex flex-col items-center">
     <span className="text-xs">{label}</span>
@@ -50,7 +55,7 @@ const ToothSelect = ({ control, name, label, type = 'permanent' }: { control: an
       control={control}
       defaultValue=""
       render={({ field }) => (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <Select onValueChange={field.onChange} value={field.value}>
           <SelectTrigger className="w-[60px] h-8 bg-yellow-200 border-gray-400">
             <SelectValue placeholder="-" />
           </SelectTrigger>
@@ -71,8 +76,68 @@ const ToothRow = ({ control, teeth, type = 'permanent' } : { control: any, teeth
     </div>
 );
 
+const ScoreTable = ({ title, scores }: { title: string, scores: { label: string, value: number }[] }) => (
+  <div className="w-24">
+    <h4 className="font-bold text-center mb-1">{title}</h4>
+    <table className="w-full border-collapse border border-black">
+      <tbody>
+        {scores.map((score, index) => (
+          <tr key={score.label}>
+            <td className="border border-black px-2 font-mono">{score.label}</td>
+            <td className="border border-black px-2 bg-green-200 text-center font-bold">{score.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+
 export function Odontogram({ form }: { form: any }) {
   const { control } = form;
+  const odontogramData = useWatch({ control, name: 'odontogram-chart' });
+
+  const scores = useMemo(() => {
+    const dmf = { D: 0, M: 0, F: 0 };
+    const def = { d: 0, e: 0, f: 0 };
+
+    if (odontogramData) {
+      // DMF-T calculation (permanent teeth)
+      allAdultTeethIds.forEach(id => {
+        const status = odontogramData[`tooth-${id}`];
+        if (status === '1' || status === '2') dmf.D++;
+        if (status === '4') dmf.M++;
+        if (status === '3') dmf.F++;
+      });
+      
+      // def-t calculation (primary teeth)
+      allChildTeethIds.forEach(id => {
+        const status = odontogramData[`tooth-${id}`];
+        if (status === 'B' || status === 'C') def.d++;
+        if (status === 'E') def.e++;
+        if (status === 'D') def.f++;
+      });
+    }
+
+    const dmfTotal = dmf.D + dmf.M + dmf.F;
+    const defTotal = def.d + def.e + def.f;
+
+    return {
+      dmfScores: [
+        { label: 'D', value: dmf.D },
+        { label: 'M', value: dmf.M },
+        { label: 'F', value: dmf.F },
+        { label: 'DMF-T', value: dmfTotal },
+      ],
+      defScores: [
+        { label: 'd', value: def.d },
+        { label: 'e', value: def.e },
+        { label: 'f', value: def.f },
+        { label: 'def-t', value: defTotal },
+      ],
+    };
+
+  }, [odontogramData]);
 
   return (
     <div className="w-full p-4 border rounded-lg space-y-4">
@@ -87,22 +152,28 @@ export function Odontogram({ form }: { form: any }) {
           {toothStatusCode.primary.map(item => <p key={item.code} className="text-sm">{item.code} = {item.status}</p>)}
         </div>
       </div>
-      
-      {/* Odontogram Chart */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm font-bold">
-          <span>RA Kanan</span>
-          <span>RA Kiri</span>
+
+      <div className="flex justify-center gap-8 items-start">
+        <ScoreTable title="def-t" scores={scores.defScores} />
+
+        {/* Odontogram Chart */}
+        <div className="space-y-2 flex-grow">
+          <div className="flex justify-between text-sm font-bold px-4">
+            <span>RA Kanan</span>
+            <span>RA Kiri</span>
+          </div>
+          <ToothRow control={control} teeth={[...adultTeeth.upperRight, ...adultTeeth.upperLeft]} type="permanent" />
+          <ToothRow control={control} teeth={[...childTeeth.upperRight, ...childTeeth.upperLeft]} type="primary" />
+          <div className="border-t-2 border-black my-2"></div>
+          <ToothRow control={control} teeth={[...childTeeth.lowerRight, ...childTeeth.lowerLeft]} type="primary" />
+          <ToothRow control={control} teeth={[...adultTeeth.lowerRight.reverse(), ...adultTeeth.lowerLeft]} type="permanent" />
+          <div className="flex justify-between text-sm font-bold px-4">
+            <span>RB Kanan</span>
+            <span>RB Kiri</span>
+          </div>
         </div>
-        <ToothRow control={control} teeth={[...adultTeeth.upperRight, ...adultTeeth.upperLeft]} type="permanent" />
-        <ToothRow control={control} teeth={[...childTeeth.upperRight, ...childTeeth.upperLeft]} type="primary" />
-        <div className="border-t-2 border-black my-2"></div>
-        <ToothRow control={control} teeth={[...childTeeth.lowerRight, ...childTeeth.lowerLeft]} type="primary" />
-        <ToothRow control={control} teeth={[...adultTeeth.lowerRight.reverse(), ...adultTeeth.lowerLeft]} type="permanent" />
-         <div className="flex justify-between text-sm font-bold">
-          <span>RB Kanan</span>
-          <span>RB Kiri</span>
-        </div>
+
+        <ScoreTable title="DMF-T" scores={scores.dmfScores} />
       </div>
 
       {/* Other Clinical Checks */}

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { redirect } from 'next/navigation';
@@ -29,6 +30,21 @@ export async function submitSurvey(formData: Record<string, any>) {
       
       // Separate tooth statuses from other clinical data
       const toothStatus: Record<string, string> = {};
+      const childTeethIds: number[] = [];
+      const adultTeethIds: number[] = [];
+
+      for (let i = 51; i <= 55; i++) childTeethIds.push(i, i + 10, i + 20, i + 30);
+      for (let i = 11; i <= 18; i++) adultTeethIds.push(i, i + 10, i + 20, i + 30);
+
+      const allAdultTeethIds = [
+        ...[18, 17, 16, 15, 14, 13, 12, 11], ...[21, 22, 23, 24, 25, 26, 27, 28],
+        ...[31, 32, 33, 34, 35, 36, 37, 38], ...[48, 47, 46, 45, 44, 43, 42, 41]
+      ];
+      const allChildTeethIds = [
+        ...[55, 54, 53, 52, 51], ...[61, 62, 63, 64, 65],
+        ...[71, 72, 73, 74, 75], ...[85, 84, 83, 82, 81]
+      ];
+      
       for (const key in odontogramChartData) {
         if (key.startsWith('tooth-')) {
           if(odontogramChartData[key]) toothStatus[key] = odontogramChartData[key];
@@ -36,6 +52,28 @@ export async function submitSurvey(formData: Record<string, any>) {
           if(odontogramChartData[key]) clinicalCheck[key] = odontogramChartData[key];
         }
       }
+
+      // Calculate scores and add to responses
+      const dmf = { D: 0, M: 0, F: 0 };
+      const def = { d: 0, e: 0, f: 0 };
+
+      allAdultTeethIds.forEach(id => {
+          const status = odontogramChartData[`tooth-${id}`];
+          if (status === '1' || status === '2') dmf.D++;
+          if (status === '4') dmf.M++;
+          if (status === '3') dmf.F++;
+      });
+
+      allChildTeethIds.forEach(id => {
+          const status = odontogramChartData[`tooth-${id}`];
+          if (status === 'B' || status === 'C') def.d++;
+          if (status === 'E') def.e++;
+          if (status === 'D') def.f++;
+      });
+      
+      surveyResponses['DMF-T Score'] = `D: ${dmf.D}, M: ${dmf.M}, F: ${dmf.F}, Total: ${dmf.D + dmf.M + dmf.F}`;
+      surveyResponses['def-t Score'] = `d: ${def.d}, e: ${def.e}, f: ${def.f}, Total: ${def.d + def.e + def.f}`;
+
 
       if(Object.keys(toothStatus).length > 0) {
         surveyResponses['Status Gigi Geligi'] = JSON.stringify(toothStatus, null, 2);
