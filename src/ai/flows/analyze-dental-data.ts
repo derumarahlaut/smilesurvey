@@ -35,7 +35,7 @@ You have been provided with a JSON dataset containing numerous patient records f
 Your task is to perform a comprehensive analysis of this data and provide structured insights.
 
 Carefully analyze the provided patient data:
-{{{json (Array.slice patients 0 200)}}}
+{{{json patients}}}
 
 Based on your analysis of the FULL dataset, please provide the following in your structured output:
 
