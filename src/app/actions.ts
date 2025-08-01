@@ -9,7 +9,17 @@ export async function submitSurvey(formData: Record<string, any>) {
   try {
     const surveyResponses: Record<string, any> = {};
 
+    // Manually add province and city to the responses object for the prompt
+    if (formData.province) {
+        surveyResponses['Provinsi'] = formData.province;
+    }
+     if (formData.city) {
+        surveyResponses['Kota/Kabupaten'] = formData.city;
+    }
+
     for (const questionId in formData) {
+      if (questionId === 'province' || questionId === 'city') continue;
+
       const question = allQuestions.find(q => q.id === questionId);
       if (question && formData[questionId]) {
         if (formData[questionId] instanceof Date) {
@@ -20,7 +30,7 @@ export async function submitSurvey(formData: Record<string, any>) {
       }
     }
 
-    if (Object.keys(surveyResponses).length === 0) {
+    if (Object.keys(surveyResponses).length <= 2) { // check for more than just province/city
       return { error: 'No responses provided.' };
     }
 

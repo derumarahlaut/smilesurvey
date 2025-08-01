@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { Question } from '@/lib/survey-data';
 import { allQuestions } from '@/lib/survey-data';
@@ -21,6 +22,7 @@ import { submitSurvey } from '@/app/actions';
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { provinces, getCitiesByProvince } from '@/lib/location-data';
 
 const createSchema = (questions: Question[]) => {
   const schemaObject = questions.reduce((acc, q) => {
@@ -34,6 +36,7 @@ const createSchema = (questions: Question[]) => {
         validator = z.string().min(1, { message: "Wajib diisi" }).regex(/^\d+$/, "Harus berupa angka");
         break;
       case 'radio':
+      case 'select':
         validator = z.string({ required_error: "Pilih salah satu opsi" });
         break;
       case 'date':
@@ -60,6 +63,19 @@ export function SurveyForm() {
     resolver: zodResolver(surveySchema),
     defaultValues: allQuestions.reduce((acc, q) => ({...acc, [q.id]: undefined}), {})
   });
+
+  const selectedProvince = form.watch('province');
+  const [cities, setCities] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (selectedProvince) {
+      setCities(getCitiesByProvince(selectedProvince));
+      form.resetField('city');
+    } else {
+      setCities([]);
+    }
+  }, [selectedProvince, form]);
+
 
   const currentQuestion = allQuestions[step];
   const isFirstStep = step === 0;
@@ -93,6 +109,68 @@ export function SurveyForm() {
 
   const progressValue = (step / allQuestions.length) * 100;
 
+  const renderQuestion = (field: any) => {
+     switch (currentQuestion.type) {
+      case 'text':
+        return <Input id={currentQuestion.id} placeholder={currentQuestion.placeholder} {...field} />;
+      case 'number':
+        return <Input id={currentQuestion.id} type="number" placeholder={currentQuestion.placeholder} {...field} />;
+      case 'textarea':
+        return <Textarea id={currentQuestion.id} placeholder={currentQuestion.placeholder} {...field} />;
+      case 'date':
+        return (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {field.value ? format(field.value, "PPP") : <span>Pilih tanggal</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+            </PopoverContent>
+          </Popover>
+        );
+      case 'radio':
+        return (
+          <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="space-y-2">
+            {currentQuestion.options?.map((option) => (
+              <div key={option} className="flex items-center space-x-2 rounded-md border p-4 hover:bg-accent/50 has-[[data-state=checked]]:bg-accent">
+                <RadioGroupItem value={option} id={`${currentQuestion.id}-${option}`} />
+                <Label htmlFor={`${currentQuestion.id}-${option}`} className="w-full cursor-pointer">{option}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+        );
+       case 'select':
+        let options: string[] = [];
+        if (currentQuestion.id === 'province') {
+          options = provinces.map(p => p.name);
+        } else if (currentQuestion.id === 'city') {
+          options = cities;
+        } else {
+          options = currentQuestion.options || [];
+        }
+        return (
+           <Select onValueChange={field.onChange} defaultValue={field.value} disabled={currentQuestion.id === 'city' && !selectedProvince}>
+            <SelectTrigger>
+              <SelectValue placeholder={`Pilih ${currentQuestion.question}...`} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((option) => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )
+      default:
+        return null;
+    }
+  }
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
       <Progress value={progressValue} className="w-full" />
@@ -116,49 +194,7 @@ export function SurveyForm() {
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <div className="space-y-2">
-                    {currentQuestion.type === 'text' && (
-                      <Input id={currentQuestion.id} placeholder={currentQuestion.placeholder} {...field} />
-                    )}
-                    {currentQuestion.type === 'number' && (
-                      <Input id={currentQuestion.id} type="number" placeholder={currentQuestion.placeholder} {...field} />
-                    )}
-                     {currentQuestion.type === 'textarea' && (
-                      <Textarea id={currentQuestion.id} placeholder={currentQuestion.placeholder} {...field} />
-                    )}
-                    {currentQuestion.type === 'date' && (
-                       <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(field.value, "PPP") : <span>Pilih tanggal</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    )}
-                    {currentQuestion.type === 'radio' && currentQuestion.options && (
-                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="space-y-2">
-                        {currentQuestion.options.map((option) => (
-                          <div key={option} className="flex items-center space-x-2 rounded-md border p-4 hover:bg-accent/50 has-[[data-state=checked]]:bg-accent">
-                            <RadioGroupItem value={option} id={`${currentQuestion.id}-${option}`} />
-                            <Label htmlFor={`${currentQuestion.id}-${option}`} className="w-full cursor-pointer">{option}</Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
-                    )}
+                    {renderQuestion(field)}
                     {fieldState.error && <p className="text-sm font-medium text-destructive">{fieldState.error.message}</p>}
                   </div>
                 )}

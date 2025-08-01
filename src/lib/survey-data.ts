@@ -1,7 +1,7 @@
 export type Question = {
   id: string;
   question: string;
-  type: 'text' | 'number' | 'radio' | 'textarea' | 'date';
+  type: 'text' | 'number' | 'radio' | 'textarea' | 'date' | 'select';
   options?: string[];
   placeholder?: string;
   sectionId: string;
@@ -18,11 +18,16 @@ export const sections: Section[] = [
     id: 'exam-info',
     title: 'Informasi Pemeriksaan',
     questions: [
+       {
+        id: 'province',
+        question: 'Provinsi',
+        type: 'select',
+        sectionId: 'exam-info',
+      },
       {
         id: 'city',
-        question: 'Nama Kota/Kabupaten',
-        type: 'text',
-        placeholder: 'Contoh: Jakarta',
+        question: 'Kota/Kabupaten',
+        type: 'select',
         sectionId: 'exam-info',
       },
       {
