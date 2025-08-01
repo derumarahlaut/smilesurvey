@@ -2,6 +2,7 @@
 'use server';
 
 import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
+import { analyzeDentalData, type DentalAnalysisInput } from '@/ai/flows/analyze-dental-data';
 import { allQuestions } from '@/lib/survey-data';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc } from 'firebase/firestore';
@@ -166,7 +167,19 @@ export async function saveSurvey(formData: Record<string, any>, existingExamId?:
 
     if (dataToSave['exam-date'] instanceof Date) {
       dataToSave['exam-date'] = format(dataToSave['exam-date'], 'yyyy-MM-dd');
+    } else if (typeof dataToSave['exam-date'] === 'string') {
+      try {
+        const parsedDate = new Date(dataToSave['exam-date']);
+        if (!isNaN(parsedDate.getTime())) {
+          dataToSave['exam-date'] = format(parsedDate, 'yyyy-MM-dd');
+        } else {
+          delete dataToSave['exam-date'];
+        }
+      } catch (e) {
+        delete dataToSave['exam-date'];
+      }
     }
+
 
     if (dataToSave['birth-date'] && typeof dataToSave['birth-date'] === 'object') {
         const { day, month, year } = dataToSave['birth-date'];
@@ -180,7 +193,7 @@ export async function saveSurvey(formData: Record<string, any>, existingExamId?:
         } else {
              delete dataToSave['birth-date'];
         }
-    } else if (dataToSave['birth-date']) {
+    } else if (dataToSave['birth-date'] && typeof dataToSave['birth-date'] === 'string') {
        try {
         const date = new Date(dataToSave['birth-date']);
         if (!isNaN(date.getTime())) {
@@ -197,6 +210,7 @@ export async function saveSurvey(formData: Record<string, any>, existingExamId?:
 
     await setDoc(doc(db, "patients", fullExamId!), dataToSave, { merge: true });
     revalidatePath('/master');
+    revalidatePath('/dashboard');
     revalidatePath(`/master/${fullExamId}/edit`);
     return { success: true, examId: fullExamId };
   } catch (error: any) {
@@ -232,6 +246,7 @@ export async function deletePatient(examId: string) {
   try {
     await deleteDoc(doc(db, "patients", examId));
     revalidatePath('/master');
+    revalidatePath('/dashboard');
     return { success: true };
   } catch (error) {
     console.error("Error deleting patient:", error);
@@ -261,5 +276,31 @@ export async function getPatient(examId: string) {
   } catch (error: any) {
     console.error("Error fetching patient:", error);
     return { error: `Gagal mengambil data pasien: ${error.message}` };
+  }
+}
+
+
+export async function getDashboardAnalysis() {
+  try {
+    const patientsCol = collection(db, 'patients');
+    const patientSnapshot = await getDocs(patientsCol);
+    
+    if (patientSnapshot.empty) {
+        return { analysis: null };
+    }
+
+    const patientList = patientSnapshot.docs.map(doc => doc.data() as DentalAnalysisInput['patients'][0]);
+    
+    const result = await analyzeDentalData({ patients: patientList });
+
+    if (!result) {
+        return { error: 'Gagal menganalisis data. AI tidak memberikan respons.' };
+    }
+
+    return { analysis: result };
+
+  } catch (error: any) {
+    console.error("Error getting dashboard analysis:", error);
+    return { error: `Gagal menghasilkan analisis: ${error.message || 'Error tidak diketahui'}` };
   }
 }
