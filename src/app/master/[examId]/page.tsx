@@ -326,7 +326,7 @@ export default function ViewPatientPage() {
       if (loading || error || !patient) return null;
 
       return (
-         <CardFooter className="border-t pt-6 mt-6">
+         <CardFooter className="flex flex-col items-start gap-6 border-t pt-6 mt-6 md:flex-row md:items-center md:justify-between">
             <div className="w-full">
                 <h3 className="text-lg font-semibold mb-2">Status Verifikasi</h3>
                  {patient.verifierName && patient.verifiedAt ? (
@@ -354,6 +354,20 @@ export default function ViewPatientPage() {
                     </div>
                 )}
             </div>
+             <div className="flex w-full flex-shrink-0 gap-2 md:w-auto">
+                <Link href="/master" passHref className="flex-1">
+                   <Button variant="outline" className="w-full">
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Kembali
+                   </Button>
+                </Link>
+                <Link href={`/master/${examId}/edit`} passHref className="flex-1">
+                   <Button className="w-full">
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit Data
+                   </Button>
+                </Link>
+             </div>
          </CardFooter>
       )
   }
@@ -368,20 +382,6 @@ export default function ViewPatientPage() {
                     <CardTitle className="font-headline text-4xl">Detail Data Pasien</CardTitle>
                     <CardDescription>Informasi lengkap untuk pasien dengan nomor urut: {examId}</CardDescription>
                 </div>
-                 <div className="flex gap-2">
-                    <Link href="/master" passHref>
-                       <Button variant="outline">
-                          <ArrowLeft className="mr-2 h-4 w-4" />
-                          Kembali ke Tabel
-                       </Button>
-                    </Link>
-                    <Link href={`/master/${examId}/edit`} passHref>
-                       <Button>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit Data
-                       </Button>
-                    </Link>
-                 </div>
              </div>
           </CardHeader>
           <CardContent className="space-y-6">
