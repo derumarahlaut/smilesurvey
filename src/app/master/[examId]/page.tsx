@@ -8,6 +8,26 @@ import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { allQuestions } from '@/lib/survey-data';
 
+const toothStatusCodeMap: Record<string, string> = {
+    // Gigi Tetap
+    '0': 'Sehat',
+    '1': 'Gigi Berlubang/Karies',
+    '2': 'Tumpatan dengan karies',
+    '3': 'Tumpatan tanpa karies',
+    '4': 'Gigi dicabut karena karies',
+    '5': 'Gigi dicabut karena sebab lain',
+    '6': 'Fissure Sealant',
+    '7': 'Protesa cekat/mahkota cekat/implan/veneer',
+    '8': 'Gigi tidak tumbuh',
+    '9': 'Lain-lain',
+    // Gigi Sulung
+    'A': 'Sehat',
+    'B': 'Gigi Berlubang/Karies',
+    'C': 'Tumpatan dengan karies',
+    'D': 'Tumpatan tanpa karies',
+    'E': 'Gigi dicabut karena karies',
+};
+
 const DataField = ({ label, value }: { label: string; value?: string | number | null }) => {
     if (!value && value !== 0) return null;
     return (
@@ -75,6 +95,13 @@ export default async function ViewPatientPage({ params }: { params: { examId: st
     if (key === 'gender' && value === '2') return 'Perempuan';
     return String(value);
   }
+
+  const formatToothStatusValue = (value: any): string => {
+    const code = String(value);
+    const description = toothStatusCodeMap[code];
+    return description ? `${code} (${description})` : code;
+  };
+
 
   return (
     <main className="container mx-auto flex min-h-screen flex-col items-center justify-start p-4 md:p-8">
@@ -165,7 +192,7 @@ export default async function ViewPatientPage({ params }: { params: { examId: st
                                     {Object.entries(patient)
                                         .filter(([key]) => key.startsWith('Status Gigi'))
                                         .map(([key, value]) => (
-                                            <DataField key={key} label={key} value={String(value)} />
+                                            <DataField key={key} label={key} value={formatToothStatusValue(value)} />
                                         ))
                                     }
                                 </div>
