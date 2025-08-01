@@ -184,6 +184,11 @@ export const columns: ColumnDef<Patient>[] = [
     cell: ({ row }) => <div>{row.getValue("city")}</div>,
   },
   {
+    accessorKey: "district",
+    header: "Kecamatan",
+    cell: ({ row }) => <div>{row.getValue("district")}</div>,
+  },
+  {
     accessorKey: "patientCategory",
     header: "Kategori Pasien",
     cell: ({ row }) => <div>{row.getValue("patientCategory")}</div>,
@@ -297,6 +302,7 @@ export function PatientTable({ data }: { data: Patient[] }) {
                         examDate: "Tanggal Pemeriksaan",
                         province: "Provinsi",
                         city: "Kota/Kabupaten",
+                        district: "Kecamatan",
                         patientCategory: "Kategori Pasien"
                     }
                     return (

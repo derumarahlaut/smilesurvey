@@ -25,6 +25,7 @@ async function getPatients(): Promise<Patient[]> {
       birthDate: data['birth-date'],
       gender: data.gender === '1' ? 'Laki-laki' : 'Perempuan',
       village: data.village,
+      district: data.district,
       occupation: data.occupation,
       address: data.address,
       education: data.education,

@@ -10,6 +10,8 @@ export type Patient = {
     patientCategory: 'Siswa sekolah dasar (SD)' | 'Umum';
     name: string;
     village?: string;
+    district?: string;
+    kecamatan?: string;
     occupation?: string;
     address?: string;
     birthDate: string;

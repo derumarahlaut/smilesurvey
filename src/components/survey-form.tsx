@@ -461,7 +461,15 @@ export function SurveyForm() {
                   <FormField id="village">
                      <Controller name="village" control={form.control} render={({ field }) => <Input {...field} id="village" />} />
                   </FormField>
-                   <FormField id="occupation">
+                   <FormField id="district">
+                     <Controller name="district" control={form.control} render={({ field }) => <Input {...field} id="district" />} />
+                  </FormField>
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField id="address">
+                       <Controller name="address" control={form.control} render={({ field }) => <Input {...field} id="address" />} />
+                    </FormField>
+                    <FormField id="occupation">
                         <Controller
                             name="occupation"
                             control={form.control}
@@ -480,10 +488,7 @@ export function SurveyForm() {
                     </FormField>
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField id="address">
-                       <Controller name="address" control={form.control} render={({ field }) => <Input {...field} id="address" />} />
-                    </FormField>
-                    <FormField id="education">
+                     <FormField id="education">
                         <Controller
                             name="education"
                             control={form.control}

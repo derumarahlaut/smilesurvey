@@ -23,7 +23,8 @@ export const allQuestions: Question[] = [
       options: ['Siswa sekolah dasar (SD)', 'Umum'],
     },
     { id: 'name', question: 'Nama Pasien', type: 'text' },
-    { id: 'village', question: 'Desa/Kelurahan/Kecamatan', type: 'text' },
+    { id: 'village', question: 'Desa/Kelurahan', type: 'text' },
+    { id: 'district', question: 'Kecamatan', type: 'text' },
     {
       id: 'occupation',
       question: 'Pekerjaan',
