@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 const toothStatusCodeMap: Record<string, string> = {
     // Gigi Tetap
@@ -130,13 +130,15 @@ const VerificationDialog = ({ examId }: { examId: string }) => {
 };
 
 
-export default function ViewPatientPage({ params }: { params: { examId: string } }) {
-  const { examId } = params;
+export default function ViewPatientPage() {
+  const params = useParams();
+  const examId = params.examId as string;
   const [patient, setPatient] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!examId) return;
     const fetchPatient = async () => {
       setLoading(true);
       const { patient: fetchedPatient, error: fetchError } = await getPatient(examId);
@@ -383,3 +385,5 @@ export default function ViewPatientPage({ params }: { params: { examId: string }
     </main>
   );
 }
+
+    
