@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc, Timestamp } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
-import { format } from 'date-fns';
+import { format, differenceInYears, parse } from 'date-fns';
 
 
 async function getNextPatientSequence(idPrefix: string): Promise<string> {
@@ -64,7 +64,7 @@ function processFormData(formData: Record<string, any>) {
     ];
     const allChildTeethIds = [
       ...[55, 54, 53, 52, 51], ...[61, 62, 63, 64, 65],
-      ...[81, 82, 83, 84, 85], ...[75, 74, 73, 72, 71]
+      ...[81, 82, 83, 84, 85], ...[71, 72, 73, 74, 75]
     ];
     
     for (const key in odontogramChartData) {
@@ -278,6 +278,17 @@ export async function getPatient(examId: string) {
   }
 }
 
+function calculateAge(birthDate: string | Date): number | null {
+    if (!birthDate) return null;
+    try {
+        const date = typeof birthDate === 'string' ? parse(birthDate, 'yyyy-MM-dd', new Date()) : birthDate;
+        if (isNaN(date.getTime())) return null;
+        return differenceInYears(new Date(), date);
+    } catch {
+        return null;
+    }
+}
+
 
 export async function getDashboardAnalysis(filters: {
   language: string;
@@ -315,7 +326,63 @@ export async function getDashboardAnalysis(filters: {
 
     const patientList = patientSnapshot.docs.map(doc => doc.data() as DentalAnalysisInput['patients'][0]);
     
-    const result = await analyzeDentalData({ patients: patientList, language: filters.language });
+     // Calculate summary tables
+    const summaryTables = {
+        education: { 'SD': 0, 'SMP': 0, 'SMA': 0, 'Diploma 1/2/3': 0, 'D4/S1': 0, 'S2': 0, 'S3': 0, 'Tidak sekolah': 0, 'Jumlah': 0 },
+        occupation: { 'ASN/PNS/PPPK': 0, 'TNI/POLRI': 0, 'PEGAWAI BUMN': 0, 'PEGAWAI SWASTA': 0, 'WIRASWASTA/WIRAUSAHA': 0, 'PELAJAR/MAHASISWA': 0, 'PENGURUS/IBU RUMAH TANGGA': 0, 'ASISTEN RUMAH TANGGA': 0, 'TIDAK BEKERJA': 0, 'Jumlah': 0 },
+        gender: { 'Laki-laki': 0, 'Perempuan': 0, 'Jumlah': 0 },
+        ageGroup: { 'Antara 5-10 tahun (anak-anak)': 0, 'Antara 10-18 tahun (remaja)': 0, 'Antara 18-60 tahun (produktif)': 0, '60 tahun ke atas (lansia)': 0, 'Jumlah': 0 }
+    };
+    
+    const educationMap: Record<string, keyof typeof summaryTables.education> = {
+        'SD': 'SD', 'SMP': 'SMP', 'SMA': 'SMA', 'Diploma': 'Diploma 1/2/3', 'Sarjana': 'D4/S1', 'S2': 'S2', 'S3': 'S3', 'Lainnya': 'Tidak sekolah'
+    };
+     const occupationMap: Record<string, keyof typeof summaryTables.occupation> = {
+        'Pegawai Negeri': 'ASN/PNS/PPPK',
+        'Pegawai Swasta': 'PEGAWAI SWASTA',
+        'Wiraswasta': 'WIRASWASTA/WIRAUSAHA',
+        'Pelajar/Mahasiswa': 'PELAJAR/MAHASISWA',
+        'Ibu Rumah Tangga': 'PENGURUS/IBU RUMAH TANGGA',
+        'Tidak Bekerja': 'TIDAK BEKERJA',
+    };
+
+
+    patientList.forEach(p => {
+        // Education
+        const eduKey = p['patient-category'] === 'Siswa sekolah dasar (SD)' ? p.parentEducation : p.education;
+        const mappedEduKey = eduKey ? educationMap[eduKey] || 'Tidak sekolah' : 'Tidak sekolah';
+        if (summaryTables.education[mappedEduKey] !== undefined) {
+            summaryTables.education[mappedEduKey]++;
+            summaryTables.education['Jumlah']++;
+        }
+
+        // Occupation
+        const occKey = p['patient-category'] === 'Siswa sekolah dasar (SD)' ? p.parentOccupation : p.occupation;
+        const mappedOccKey = occKey ? occupationMap[occKey] || 'TIDAK BEKERJA' : 'TIDAK BEKERJA';
+        if (summaryTables.occupation[mappedOccKey] !== undefined) {
+             summaryTables.occupation[mappedOccKey]++;
+             summaryTables.occupation['Jumlah']++;
+        }
+        
+        // Gender
+        if (p.gender === '1') { summaryTables.gender['Laki-laki']++; }
+        else if (p.gender === '2') { summaryTables.gender['Perempuan']++; }
+        summaryTables.gender['Jumlah']++;
+
+        // Age Group
+        const age = calculateAge(p['birth-date']);
+        if (age !== null) {
+            if (age >= 5 && age <= 10) summaryTables.ageGroup['Antara 5-10 tahun (anak-anak)']++;
+            else if (age > 10 && age <= 18) summaryTables.ageGroup['Antara 10-18 tahun (remaja)']++;
+            else if (age > 18 && age <= 60) summaryTables.ageGroup['Antara 18-60 tahun (produktif)']++;
+            else if (age > 60) summaryTables.ageGroup['60 tahun ke atas (lansia)']++;
+            
+            if (age >= 5) summaryTables.ageGroup['Jumlah']++;
+        }
+    });
+
+
+    const result = await analyzeDentalData({ patients: patientList, language: filters.language, summaryTables });
 
     if (!result) {
         return { error: 'Gagal menganalisis data. AI tidak memberikan respons.' };

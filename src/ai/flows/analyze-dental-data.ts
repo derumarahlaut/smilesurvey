@@ -32,6 +32,8 @@ const analysisPrompt = ai.definePrompt({
   prompt: `
 You are a public health data analyst specializing in community dental health in Indonesia.
 You have been provided with a JSON dataset containing numerous patient records from a dental survey.
+You have also been given pre-calculated summary tables for demographics.
+
 Your task is to perform a comprehensive analysis of this data and provide structured insights.
 
 The user has requested the report to be in {{language}}. All text in the 'executiveSummary', 'keyFindings', and 'recommendations' fields must be in {{language}}.
@@ -41,14 +43,15 @@ Carefully analyze the provided patient data:
 
 Based on your analysis of the FULL dataset, please provide the following in your structured output:
 
-1.  **Executive Summary**: Write a concise, high-level paragraph summarizing the overall state of dental health based on the data.
-2.  **Key Statistics**:
+1.  **Return the summaryTables object exactly as it was provided in the input.** Do not modify it.
+2.  **Executive Summary**: Write a concise, high-level paragraph summarizing the overall state of dental health based on the data.
+3.  **Key Statistics**:
     *   Calculate the total number of patients.
     *   Calculate the average DMF-T score. To do this, find the 'DMF-T Score' field for each patient (e.g., "D: 1, M: 0, F: 2, Total: 3"), extract the 'Total' value, and then average these totals across all patients who have this score.
     *   Calculate the average def-t score using the same method for the 'def-t Score' field.
     *   Identify the province with the most patient records.
-3.  **Key Findings**: Identify and list 3-5 of the most important qualitative findings. These could be about common problems (e.g., "High prevalence of untreated caries in primary school students"), regional disparities, or correlations between demographics and dental health.
-4.  **Recommendations**: Based on your findings, provide a list of 3-5 actionable recommendations. These should be practical suggestions for public health officials, like "Launch a targeted fissure sealant program in [Region]" or "Develop educational materials about the link between sugary drink consumption and caries for parents of elementary school children."
+4.  **Key Findings**: Identify and list 3-5 of the most important qualitative findings. These could be about common problems (e.g., "High prevalence of untreated caries in primary school students"), regional disparities, or correlations between demographics and dental health.
+5.  **Recommendations**: Based on your findings, provide a list of 3-5 actionable recommendations. These should be practical suggestions for public health officials, like "Launch a targeted fissure sealant program in [Region]" or "Develop educational materials about the link between sugary drink consumption and caries for parents of elementary school children."
 
 Provide your entire response in the required structured format, with all textual analysis in {{language}}.
 `,
@@ -64,7 +67,8 @@ const analyzeDentalDataFlow = ai.defineFlow(
     // The prompt will still instruct the model to act as if it has the full dataset.
     const limitedInput = {
         patients: input.patients.slice(0, 200), // Use a reasonable limit
-        language: input.language
+        language: input.language,
+        summaryTables: input.summaryTables,
     };
     
     const { output } = await analysisPrompt(limitedInput);
@@ -110,6 +114,8 @@ const analyzeDentalDataFlow = ai.defineFlow(
         output.keyStatistics.topProvince = topProvinceEntry ? topProvinceEntry[0] : 'N/A';
     }
 
+    // Ensure summary tables are passed through
+    output.summaryTables = input.summaryTables;
 
     return output;
   }
