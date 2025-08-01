@@ -9,8 +9,6 @@ import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, lim
 import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format, differenceInYears, parse } from 'date-fns';
-import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
 
 
 async function getNextPatientSequence(idPrefix: string): Promise<string> {
@@ -231,10 +229,6 @@ export async function submitSurveyForTips(formData: Record<string, any>) {
       return { error: 'No responses provided.' };
     }
 
-    ai.configure({
-      plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
-    });
-
     const result = await generatePersonalizedTips({ surveyResponses });
 
     if (!result || !result.tips || result.tips.length === 0) {
@@ -402,10 +396,6 @@ export async function getDashboardAnalysis(filters: {
   dateRange?: { from?: Date; to?: Date };
 }) {
   try {
-    ai.configure({
-      plugins: [googleAI({ apiKey: process.env.GEMINI_API_KEY })],
-    });
-
     let patientQuery: any = collection(db, 'patients');
     
     const queryConstraints = [];
