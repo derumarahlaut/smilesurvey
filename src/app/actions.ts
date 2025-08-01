@@ -117,20 +117,26 @@ export async function saveSurvey(formData: Record<string, any>) {
     // Convert date objects to strings before saving to Firestore
     if (dataToSave['exam-date'] instanceof Date) {
         dataToSave['exam-date'] = dataToSave['exam-date'].toISOString().split('T')[0];
+    } else if (dataToSave['exam-date']) {
+        // if it's already a string, ensure format is consistent
+        dataToSave['exam-date'] = new Date(dataToSave['exam-date']).toISOString().split('T')[0];
     }
 
     if (dataToSave['birth-date'] && typeof dataToSave['birth-date'] === 'object') {
         const { day, month, year } = dataToSave['birth-date'];
         if (day && month && year) {
+            // Month in JS Date is 0-indexed, so subtract 1
             const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
             if (!isNaN(date.getTime())) {
               dataToSave['birth-date'] = date.toISOString().split('T')[0];
             } else {
-              delete dataToSave['birth-date']; // or handle as invalid date
+              delete dataToSave['birth-date'];
             }
         } else {
              delete dataToSave['birth-date'];
         }
+    } else {
+        delete dataToSave['birth-date'];
     }
 
     await setDoc(doc(db, "patients", examId), dataToSave);
