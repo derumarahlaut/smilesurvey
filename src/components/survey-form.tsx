@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition, useEffect } from 'react';
@@ -224,6 +225,37 @@ export function SurveyForm() {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField id="province">
+                <Controller
+                  name="province"
+                  control={form.control}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      field={field}
+                      options={provinces.map(p => p.name)}
+                      placeholder="Pilih Provinsi..."
+                      onValueChange={(value) => form.setValue('province', value)}
+                    />
+                  )}
+                />
+              </FormField>
+              <FormField id="city">
+                <Controller
+                  name="city"
+                  control={form.control}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      field={field}
+                      options={cities}
+                      placeholder="Pilih Kota/Kabupaten..."
+                      disabled={!selectedProvince}
+                      onValueChange={(value) => form.setValue('city', value)}
+                    />
+                  )}
+                />
+              </FormField>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField id="exam-id">
                  <Controller name="exam-id" control={form.control} render={({ field }) => <Input {...field} id="exam-id" />} />
