@@ -364,7 +364,14 @@ export async function getDashboardAnalysis(filters: {
         return { analysis: null };
     }
 
-    const patientList = patientSnapshot.docs.map(doc => doc.data() as DentalAnalysisInput['patients'][0]);
+    // Process patient data to include calculated scores before analysis
+    const patientList = patientSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        ...processFormData(data)
+      };
+    }) as DentalAnalysisInput['patients'];
     
      // Calculate summary tables
     const summaryTables = {
@@ -435,3 +442,4 @@ export async function getDashboardAnalysis(filters: {
     return { error: `Gagal menghasilkan analisis: ${error.message || 'Error tidak diketahui'}` };
   }
 }
+
