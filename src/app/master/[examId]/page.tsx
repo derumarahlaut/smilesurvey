@@ -188,7 +188,7 @@ export default async function ViewPatientPage({ params }: { params: { examId: st
                              <Separator className="my-6" />
                              <div>
                                 <h4 className="mb-2 font-medium">Status Gigi Geligi</h4>
-                                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                                <div className="flex flex-col gap-2">
                                     {Object.entries(patient)
                                         .filter(([key]) => key.startsWith('Status Gigi'))
                                         .map(([key, value]) => (
