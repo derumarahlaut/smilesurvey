@@ -1,7 +1,6 @@
 
 'use server';
 
-import { redirect } from 'next/navigation';
 import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
 import { allQuestions } from '@/lib/survey-data';
 
@@ -105,12 +104,7 @@ export async function submitSurvey(formData: Record<string, any>) {
       return { error: 'Could not generate personalized tips at this time.' };
     }
     
-    const tips = result.tips;
-
-    const params = new URLSearchParams();
-    params.set('tips', JSON.stringify(tips));
-    
-    redirect(`/tips?${params.toString()}`);
+    return { tips: result.tips };
 
   } catch (error) {
     console.error("Error submitting survey:", error);

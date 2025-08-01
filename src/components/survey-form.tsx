@@ -161,7 +161,7 @@ const DateOfBirthInput = ({ control, name }: { control: any, name: string }) => 
     );
 };
 
-export function SurveyForm() {
+export function SurveyForm({ onSurveySubmit }: { onSurveySubmit: (tips: string[]) => void }) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -225,11 +225,18 @@ export function SurveyForm() {
       const combinedData = { ...transformedData, 'odontogram-chart': odontogramData };
 
       const result = await submitSurvey(combinedData);
+      
       if (result?.error) {
         toast({
           title: "Terjadi Kesalahan",
           description: result.error,
           variant: "destructive",
+        });
+      } else if (result?.tips) {
+        onSurveySubmit(result.tips);
+        toast({
+          title: "Sukses!",
+          description: "Saran berhasil dibuat di bawah formulir.",
         });
       }
     });
@@ -364,7 +371,7 @@ export function SurveyForm() {
       <div className="flex justify-end">
           <Button type="submit" disabled={isPending} size="lg">
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Selesai & Lihat Hasil
+            Lihat Hasil
           </Button>
       </div>
     </form>
