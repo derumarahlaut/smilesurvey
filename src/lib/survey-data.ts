@@ -68,8 +68,8 @@ export const sections: Section[] = [
       {
         id: 'occupation',
         question: 'Pekerjaan',
-        type: 'text',
-        placeholder: 'Contoh: Pelajar',
+        type: 'radio',
+        options: ['Pelajar/Mahasiswa', 'Pegawai Negeri', 'Pegawai Swasta', 'Wiraswasta', 'Ibu Rumah Tangga', 'Tidak Bekerja', 'Pensiunan', 'Lainnya'],
         sectionId: 'patient-identity',
       },
       {
@@ -95,15 +95,15 @@ export const sections: Section[] = [
       {
         id: 'gum-check',
         question: 'Pemeriksaan Gusi',
-        type: 'textarea',
-        placeholder: 'Catat hasil pemeriksaan gusi...',
+        type: 'radio',
+        options: ['Baik', 'Ada karang gigi', 'Radang gusi (Gingivitis)'],
         sectionId: 'dental-check',
       },
       {
         id: 'mucosal-lesion',
         question: 'Lesi Mukosa Oral',
-        type: 'textarea',
-        placeholder: 'Catat jika ada lesi mukosa oral...',
+        type: 'radio',
+        options: ['Tidak Ada', 'Ada'],
         sectionId: 'dental-check',
       },
     ],
@@ -115,8 +115,8 @@ export const sections: Section[] = [
       {
         id: 'treatment-needs',
         question: 'Kebutuhan Perawatan',
-        type: 'textarea',
-        placeholder: 'Jelaskan kebutuhan perawatan...',
+        type: 'radio',
+        options: ['Tidak ada', 'Pembersihan karang gigi (scalling)', 'Penambalan', 'Pencabutan', 'Perawatan Saluran Akar', 'Lainnya'],
         sectionId: 'treatment-plan',
       },
       {
