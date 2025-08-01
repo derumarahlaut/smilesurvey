@@ -35,6 +35,8 @@ async function getPatients(): Promise<Patient[]> {
       gender: data.gender === '1' ? 'Laki-laki' : 'Perempuan',
       village: data.village,
       district: data.district,
+      phone: data.phone,
+      email: data.email,
       occupation: data.occupation,
       address: data.address,
       education: data.education,

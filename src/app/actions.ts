@@ -288,7 +288,7 @@ export async function getPatient(examId: string) {
   }
 }
 
-export async function verifyPatient(examId: string, verifierName: string) {
+export async function verifyPatient(examId: string, verifierName: string, patientData: any) {
   if (!verifierName) {
     return { error: 'Nama verifikator harus diisi.' };
   }
@@ -298,6 +298,17 @@ export async function verifyPatient(examId: string, verifierName: string) {
       verifierName: verifierName,
       verifiedAt: Timestamp.now(),
     });
+
+    // Simulate sending notification
+    if (patientData?.email) {
+        console.log(`SIMULASI: Mengirim notifikasi verifikasi ke email: ${patientData.email}`);
+        // TODO: Tambahkan integrasi layanan email di sini
+    }
+    if (patientData?.phone) {
+        console.log(`SIMULASI: Mengirim notifikasi verifikasi ke WhatsApp: ${patientData.phone}`);
+         // TODO: Tambahkan integrasi layanan WhatsApp di sini
+    }
+
     revalidatePath('/master');
     revalidatePath(`/master/${examId}`);
     return { success: true };

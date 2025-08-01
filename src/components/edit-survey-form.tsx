@@ -359,6 +359,14 @@ export function EditSurveyForm({ patientData, examId }: { patientData: any, exam
                 <DateOfBirthInput control={form.control} name="birth-date" />
             </FormField>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField id="phone">
+                 <Controller name="phone" control={form.control} render={({ field }) => <Input {...field} id="phone" placeholder="Contoh: 08123456789" />} />
+              </FormField>
+               <FormField id="email">
+                 <Controller name="email" control={form.control} render={({ field }) => <Input {...field} id="email" type="email" placeholder="Contoh: anisa@example.com" />} />
+              </FormField>
+          </div>
 
           {patientCategory === 'Siswa sekolah dasar (SD)' && (
             <>

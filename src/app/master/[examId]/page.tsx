@@ -59,7 +59,7 @@ const DataField = ({ label, value, children }: { label: string; value?: string |
 
 const getLabel = (key: string) => allQuestions.find(q => q.id === key)?.question || key;
 
-const VerificationDialog = ({ examId }: { examId: string }) => {
+const VerificationDialog = ({ examId, patient }: { examId: string, patient: any }) => {
     const [verifierName, setVerifierName] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const { toast } = useToast();
@@ -75,7 +75,7 @@ const VerificationDialog = ({ examId }: { examId: string }) => {
             return;
         }
         setIsVerifying(true);
-        const result = await verifyPatient(examId, verifierName);
+        const result = await verifyPatient(examId, verifierName, patient);
         setIsVerifying(false);
 
         if (result.error) {
@@ -165,6 +165,8 @@ export default function ViewPatientPage() {
     { id: 'city', label: 'Kota/Kabupaten' },
     { id: 'province', label: 'Provinsi' },
     { id: 'patient-category', label: 'Kategori Pasien' },
+    { id: 'phone', label: 'Nomor WhatsApp' },
+    { id: 'email', label: 'Email' },
   ];
 
   const professionalFields = [
@@ -247,7 +249,7 @@ export default function ViewPatientPage() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                         {demographicFields.map(field => (
-                            <DataField key={field.id} label={field.label} value={formatDisplayValue(field.id, patient[field.id])} />
+                            <DataField key={field.id} label={getLabel(field.id)} value={formatDisplayValue(field.id, patient[field.id])} />
                         ))}
                     </CardContent>
                 </Card>
@@ -342,7 +344,7 @@ export default function ViewPatientPage() {
                                 </p>
                             </div>
                         </div>
-                        <VerificationDialog examId={examId} />
+                        <VerificationDialog examId={examId} patient={patient} />
                     </div>
                 )}
             </div>

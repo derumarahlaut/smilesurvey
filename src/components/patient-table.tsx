@@ -221,7 +221,9 @@ export function PatientTable({ data }: { data: Patient[] }) {
   )
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
-       district: false // Hide district by default
+       district: false, // Hide district by default
+       phone: false,
+       email: false,
     })
   const [rowSelection, setRowSelection] = React.useState({})
 
@@ -320,7 +322,9 @@ export function PatientTable({ data }: { data: Patient[] }) {
                         city: "Kota/Kabupaten",
                         district: "Kecamatan",
                         patientCategory: "Kategori Pasien",
-                        verifierName: "Verifikator"
+                        verifierName: "Verifikator",
+                        phone: "Nomor WhatsApp",
+                        email: "Email"
                     }
                     return (
                       <DropdownMenuCheckboxItem

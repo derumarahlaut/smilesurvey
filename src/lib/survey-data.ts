@@ -34,6 +34,8 @@ export const allQuestions: Question[] = [
     { id: 'address', question: 'Alamat Pasien', type: 'text' },
     { id: 'birth-date', question: 'Tanggal Lahir (Tgl/Bl/Th)', type: 'date' },
     { id: 'gender', question: 'Jenis Kelamin (1=L, 2=P)', type: 'select', options: ['Laki-laki', 'Perempuan'] },
+    { id: 'phone', question: 'Nomor WhatsApp', type: 'text' },
+    { id: 'email', question: 'Email', type: 'text' },
     {
       id: 'education',
       question: 'Pendidikan Terakhir',

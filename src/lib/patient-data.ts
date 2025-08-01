@@ -16,6 +16,8 @@ export type Patient = {
     address?: string;
     birthDate: string;
     gender: 'Laki-laki' | 'Perempuan';
+    phone?: string;
+    email?: string;
     education?: string;
     schoolName?: string;
     classLevel?: '1' | '2' | '3' | '4' | '5' | '6';
