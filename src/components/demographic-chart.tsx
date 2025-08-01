@@ -2,7 +2,7 @@
 "use client"
 
 import { useMemo } from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, LabelList } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 
@@ -42,7 +42,7 @@ export function DemographicChart({ title, data }: DemographicChartProps) {
               <BarChart
                 data={chartData}
                 layout="vertical"
-                margin={{ top: 5, right: 20, left: 40, bottom: 5 }}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" allowDecimals={false} />
@@ -51,14 +51,23 @@ export function DemographicChart({ title, data }: DemographicChartProps) {
                   type="category"
                   tickLine={false}
                   axisLine={false}
-                  width={100}
-                  tick={{ fontSize: 12, fill: 'hsl(var(--foreground))' }}
+                  width={150} 
+                  tick={{ 
+                    fontSize: 12, 
+                    fill: 'hsl(var(--foreground))',
+                    // @ts-ignore
+                    textAnchor: "start",
+                    dx: -145
+                  }}
+                  tickFormatter={(value) => value.length > 20 ? `${value.substring(0, 20)}...` : value}
                 />
                 <ChartTooltip
                   cursor={false}
                   content={<ChartTooltipContent indicator="line" />}
                 />
-                <Bar dataKey="value" fill="var(--color-value)" radius={4} />
+                <Bar dataKey="value" fill="var(--color-value)" radius={4}>
+                   <LabelList dataKey="value" position="right" offset={8} className="fill-foreground" fontSize={12} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
