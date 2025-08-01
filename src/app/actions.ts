@@ -18,7 +18,8 @@ export async function submitSurvey(formData: Record<string, any>) {
     
     // Process regular form data
     for (const id in regularFormData) {
-      if (regularFormData[id]) { // Ensure value is not empty
+      // Check for null or undefined, but allow other "falsy" values like 0, false, ""
+      if (regularFormData[id] !== null && regularFormData[id] !== undefined) { 
         surveyResponses[getQuestionText(id)] = regularFormData[id];
       }
     }
@@ -26,7 +27,6 @@ export async function submitSurvey(formData: Record<string, any>) {
     // Process and flatten odontogram data
     if (odontogramChartData) {
       const clinicalCheck: Record<string, any> = {};
-      
       const toothStatus: Record<string, string> = {};
       
       const allAdultTeethIds = [
@@ -39,10 +39,12 @@ export async function submitSurvey(formData: Record<string, any>) {
       ];
       
       for (const key in odontogramChartData) {
-        if (key.startsWith('tooth-')) {
-          if(odontogramChartData[key]) toothStatus[key] = odontogramChartData[key];
-        } else {
-          if(odontogramChartData[key]) clinicalCheck[key] = odontogramChartData[key];
+        if (odontogramChartData[key] !== null && odontogramChartData[key] !== undefined) {
+            if (key.startsWith('tooth-')) {
+                toothStatus[key] = odontogramChartData[key];
+            } else {
+                clinicalCheck[key] = odontogramChartData[key];
+            }
         }
       }
 
@@ -71,15 +73,11 @@ export async function submitSurvey(formData: Record<string, any>) {
       surveyResponses['DMF-T Score'] = `D: ${dmf.D}, M: ${dmf.M}, F: ${dmf.F}, Total: ${dmf.D + dmf.M + dmf.F}`;
       surveyResponses['def-t Score'] = `d: ${def.d}, e: ${def.e}, f: ${def.f}, Total: ${def.d + def.e + def.f}`;
 
-
-      if(Object.keys(toothStatus).length > 0) {
-        // Instead of JSON.stringify, let's add each tooth status individually.
-        for (const toothId in toothStatus) {
-            // Only add teeth that are not healthy (status != '0' or 'A')
-            if (toothStatus[toothId] !== '0' && toothStatus[toothId] !== 'A') {
-                surveyResponses[`Status Gigi ${toothId.replace('tooth-','')}`] = toothStatus[toothId];
-            }
-        }
+      // Add tooth statuses for non-healthy teeth only
+      for (const toothId in toothStatus) {
+          if (toothStatus[toothId] && toothStatus[toothId] !== '0' && toothStatus[toothId] !== 'A') {
+              surveyResponses[`Status Gigi ${toothId.replace('tooth-','')}`] = toothStatus[toothId];
+          }
       }
       
       // Add other clinical checks to the main response object
