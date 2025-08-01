@@ -29,12 +29,7 @@ export async function submitSurvey(formData: Record<string, any>) {
       
       // Separate tooth statuses from other clinical data
       const toothStatus: Record<string, string> = {};
-      const childTeethIds: number[] = [];
-      const adultTeethIds: number[] = [];
-
-      for (let i = 51; i <= 55; i++) childTeethIds.push(i, i + 10, i + 20, i + 30);
-      for (let i = 11; i <= 18; i++) adultTeethIds.push(i, i + 10, i + 20, i + 30);
-
+      
       const allAdultTeethIds = [
         ...[18, 17, 16, 15, 14, 13, 12, 11], ...[21, 22, 23, 24, 25, 26, 27, 28],
         ...[31, 32, 33, 34, 35, 36, 37, 38], ...[48, 47, 46, 45, 44, 43, 42, 41]
@@ -55,14 +50,18 @@ export async function submitSurvey(formData: Record<string, any>) {
       // Calculate scores and add to responses
       const dmf = { D: 0, M: 0, F: 0 };
       const def = { d: 0, e: 0, f: 0 };
-
+      
+      // DMF-T Calculation (Gigi Tetap)
+      // D = Decay (1, 2), M = Missing (4), F = Filling (3)
       allAdultTeethIds.forEach(id => {
           const status = odontogramChartData[`tooth-${id}`];
           if (status === '1' || status === '2') dmf.D++;
           if (status === '4') dmf.M++;
           if (status === '3') dmf.F++;
       });
-
+      
+      // def-t Calculation (Gigi Sulung)
+      // d = decay (B, C), e = evoliation/extracted (E), f = filling (D)
       allChildTeethIds.forEach(id => {
           const status = odontogramChartData[`tooth-${id}`];
           if (status === 'B' || status === 'C') def.d++;

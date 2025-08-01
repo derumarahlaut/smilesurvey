@@ -102,7 +102,8 @@ export function Odontogram({ form }: { form: any }) {
     const def = { d: 0, e: 0, f: 0 };
 
     if (odontogramData) {
-      // DMF-T calculation (permanent teeth)
+      // DMF-T Calculation (Gigi Tetap)
+      // D = Decay (1, 2), M = Missing (4), F = Filling (3)
       allAdultTeethIds.forEach(id => {
         const status = odontogramData[`tooth-${id}`];
         if (status === '1' || status === '2') dmf.D++;
@@ -110,7 +111,8 @@ export function Odontogram({ form }: { form: any }) {
         if (status === '3') dmf.F++;
       });
       
-      // def-t calculation (primary teeth)
+      // def-t Calculation (Gigi Sulung)
+      // d = decay (B, C), e = evoliation/extracted (E), f = filling (D)
       allChildTeethIds.forEach(id => {
         const status = odontogramData[`tooth-${id}`];
         if (status === 'B' || status === 'C') def.d++;
