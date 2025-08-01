@@ -27,7 +27,6 @@ export async function submitSurvey(formData: Record<string, any>) {
     if (odontogramChartData) {
       const clinicalCheck: Record<string, any> = {};
       
-      // Separate tooth statuses from other clinical data
       const toothStatus: Record<string, string> = {};
       
       const allAdultTeethIds = [
@@ -74,7 +73,13 @@ export async function submitSurvey(formData: Record<string, any>) {
 
 
       if(Object.keys(toothStatus).length > 0) {
-        surveyResponses['Status Gigi Geligi'] = JSON.stringify(toothStatus, null, 2);
+        // Instead of JSON.stringify, let's add each tooth status individually.
+        for (const toothId in toothStatus) {
+            // Only add teeth that are not healthy (status != '0' or 'A')
+            if (toothStatus[toothId] !== '0' && toothStatus[toothId] !== 'A') {
+                surveyResponses[`Status Gigi ${toothId.replace('tooth-','')}`] = toothStatus[toothId];
+            }
+        }
       }
       
       // Add other clinical checks to the main response object
