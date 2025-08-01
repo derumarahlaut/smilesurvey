@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { getPatient, verifyPatient } from '@/app/actions';
@@ -242,6 +243,44 @@ export default function ViewPatientPage() {
     }
     if (patient) {
         const educationFields = patient['patient-category'] === 'Umum' ? generalEducationFields : studentEducationFields;
+        
+        const permanentTeethIds = [
+            ...[18, 17, 16, 15, 14, 13, 12, 11], ...[21, 22, 23, 24, 25, 26, 27, 28],
+            ...[41, 42, 43, 44, 45, 46, 47, 48], ...[38, 37, 36, 35, 34, 33, 32, 31]
+        ];
+        const primaryTeethIds = [
+            ...[55, 54, 53, 52, 51], ...[61, 62, 63, 64, 65],
+            ...[71, 72, 73, 74, 75], ...[81, 82, 83, 84, 85]
+        ];
+        
+        const allToothEntries = Object.entries(patient)
+            .filter(([key]) => key.startsWith('Status Gigi '))
+            .map(([key, value]) => {
+                const toothNumber = parseInt(key.replace('Status Gigi ', ''), 10);
+                return { key, value, toothNumber };
+            })
+            .sort((a, b) => a.toothNumber - b.toothNumber);
+
+        const permanentTeethEntries = allToothEntries.filter(e => permanentTeethIds.includes(e.toothNumber));
+        const primaryTeethEntries = allToothEntries.filter(e => primaryTeethIds.includes(e.toothNumber));
+
+        const ToothStatusList = ({ title, entries }: { title: string, entries: { key: string, value: any, toothNumber: number }[] }) => {
+            if (entries.length === 0) return null;
+            return (
+                <div>
+                    <h5 className="mb-2 font-medium text-muted-foreground">{title}</h5>
+                    <div className="flex flex-col gap-2">
+                        {entries.map(({ key, value }) => (
+                            <div key={key} className="flex justify-between items-center text-sm border-b pb-1">
+                                <span className="text-muted-foreground">{key}</span>
+                                <span className="font-mono font-medium">{formatToothStatusValue(value)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )
+        };
+        
         return (
             <div className="space-y-6">
                 {/* Demographics */}
@@ -297,22 +336,10 @@ export default function ViewPatientPage() {
                          </div>
                          <Separator className="my-6" />
                          <div>
-                            <h4 className="mb-2 font-medium">Status Gigi Geligi</h4>
-                            <div className="flex flex-col gap-2">
-                                {Object.entries(patient)
-                                    .filter(([key]) => key.startsWith('Status Gigi'))
-                                    .sort(([keyA], [keyB]) => {
-                                        const numA = parseInt(keyA.replace('Status Gigi ', ''), 10);
-                                        const numB = parseInt(keyB.replace('Status Gigi ', ''), 10);
-                                        return numA - numB;
-                                    })
-                                    .map(([key, value]) => (
-                                        <div key={key} className="flex justify-between items-center text-sm border-b pb-1">
-                                            <span className="text-muted-foreground">{key}</span>
-                                            <span className="font-mono font-medium">{formatToothStatusValue(value)}</span>
-                                        </div>
-                                    ))
-                                }
+                            <h4 className="mb-4 text-lg font-semibold">Status Gigi Geligi</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                               <ToothStatusList title="Gigi Tetap" entries={permanentTeethEntries} />
+                               <ToothStatusList title="Gigi Susu" entries={primaryTeethEntries} />
                             </div>
                         </div>
                     </CardContent>
