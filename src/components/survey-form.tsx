@@ -114,7 +114,7 @@ function SearchableSelect({ field, options, placeholder, disabled, onValueChange
                                     {option}
                                 </CommandItem>
                             ))}
-                        </CommandGroup>
+                        </Group>
                     </CommandList>
                 </Command>
             </PopoverContent>
@@ -197,12 +197,14 @@ export function SurveyForm() {
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(surveySchema),
     defaultValues: {
-      ...allQuestions.reduce((acc, q) => ({...acc, [q.id]: undefined}), {}),
+      ...allQuestions.reduce((acc, q) => ({...acc, [q.id]: ''}), {}),
       'patient-category': 'Umum',
       province: 'Jawa Barat',
+      city: '',
       agency: 'Dinas Kesehatan Provinsi Jawa Barat',
       'odontogram-chart': defaultOdontogram,
       'exam-date': new Date(),
+       'birth-date': { day: '', month: '', year: '' }
     }
   });
 
