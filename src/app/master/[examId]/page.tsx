@@ -4,7 +4,7 @@
 import { getPatient, verifyPatient } from '@/app/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, ArrowLeft, Pencil, List, CheckCircle, ShieldQuestion } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Pencil, CheckCircle, ShieldQuestion } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
@@ -170,15 +170,18 @@ export default function ViewPatientPage({ params }: { params: { examId: string }
     { id: 'examiner', label: 'Nama Pemeriksa' },
     { id: 'recorder', label: 'Nama Pencatat' },
   ];
-
-  const educationFields = [
+  
+  const generalEducationFields = [
       { id: 'education', label: 'Pendidikan' },
       { id: 'occupation', label: 'Pekerjaan' },
+  ];
+  
+  const studentEducationFields = [
       { id: 'school-name', label: 'Nama Sekolah' },
       { id: 'class-level', label: 'Kelas' },
       { id: 'parent-education', label: 'Pendidikan Orang Tua' },
       { id: 'parent-occupation', label: 'Pekerjaan Orang Tua' },
-  ]
+  ];
 
   const clinicalFields = [
       { id: 'DMF-T Score', label: 'Skor DMF-T' },
@@ -232,42 +235,9 @@ export default function ViewPatientPage({ params }: { params: { examId: string }
         )
     }
     if (patient) {
+        const educationFields = patient['patient-category'] === 'Umum' ? generalEducationFields : studentEducationFields;
         return (
             <div className="space-y-6">
-                {/* Verification Status */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Status Verifikasi</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {patient.verifierName && patient.verifiedAt ? (
-                            <div className="flex items-center gap-2 text-green-600">
-                                <CheckCircle className="h-5 w-5" />
-                                <div>
-                                    <p className="font-semibold">Data Terverifikasi</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Oleh: {patient.verifierName} pada {formatDisplayValue('verifiedAt', patient.verifiedAt)}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                             <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 text-yellow-600">
-                                    <ShieldQuestion className="h-5 w-5" />
-                                    <div>
-                                        <p className="font-semibold">Data Belum Diverifikasi</p>
-                                        <p className="text-sm text-muted-foreground">
-                                           Klik tombol di samping untuk memverifikasi keakuratan data ini.
-                                        </p>
-                                    </div>
-                                </div>
-                                <VerificationDialog examId={examId} />
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-
                 {/* Demographics */}
                 <Card>
                     <CardHeader>
@@ -339,8 +309,44 @@ export default function ViewPatientPage({ params }: { params: { examId: string }
             </div>
         )
     }
+    return null;
   }
 
+  const renderFooter = () => {
+      if (loading || error || !patient) return null;
+
+      return (
+         <CardFooter className="border-t pt-6 mt-6">
+            <div className="w-full">
+                <h3 className="text-lg font-semibold mb-2">Status Verifikasi</h3>
+                 {patient.verifierName && patient.verifiedAt ? (
+                    <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="h-5 w-5" />
+                        <div>
+                            <p className="font-semibold">Data Terverifikasi</p>
+                            <p className="text-sm text-muted-foreground">
+                                Oleh: {patient.verifierName} pada {formatDisplayValue('verifiedAt', patient.verifiedAt)}
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                     <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-yellow-600">
+                            <ShieldQuestion className="h-5 w-5" />
+                            <div>
+                                <p className="font-semibold">Data Belum Diverifikasi</p>
+                                <p className="text-sm text-muted-foreground">
+                                   Klik tombol di samping untuk memverifikasi keakuratan data ini.
+                                </p>
+                            </div>
+                        </div>
+                        <VerificationDialog examId={examId} />
+                    </div>
+                )}
+            </div>
+         </CardFooter>
+      )
+  }
 
   return (
     <main className="container mx-auto flex min-h-screen flex-col items-center justify-start p-4 md:p-8">
@@ -371,6 +377,7 @@ export default function ViewPatientPage({ params }: { params: { examId: string }
           <CardContent className="space-y-6">
             {renderContent()}
           </CardContent>
+          {renderFooter()}
         </Card>
       </div>
     </main>
