@@ -77,7 +77,7 @@ const ToothRow = ({ control, teeth, type = 'permanent' } : { control: any, teeth
 );
 
 const ScoreTable = ({ title, scores }: { title: string, scores: { label: string, value: number }[] }) => (
-  <div className="w-24">
+  <div className="w-32">
     <h4 className="font-bold text-center mb-1">{title}</h4>
     <table className="w-full border-collapse border border-black">
       <tbody>
@@ -156,8 +156,6 @@ export function Odontogram({ form }: { form: any }) {
       </div>
 
       <div className="flex justify-center gap-8 items-start">
-        <ScoreTable title="def-t" scores={scores.defScores} />
-
         {/* Odontogram Chart */}
         <div className="space-y-2 flex-grow">
           <div className="flex justify-between text-sm font-bold px-4">
@@ -174,9 +172,14 @@ export function Odontogram({ form }: { form: any }) {
             <span>RB Kiri</span>
           </div>
         </div>
-
+      </div>
+      
+      {/* Score Tables */}
+      <div className="flex justify-center gap-8 items-start pt-4 border-t">
+        <ScoreTable title="def-t" scores={scores.defScores} />
         <ScoreTable title="DMF-T" scores={scores.dmfScores} />
       </div>
+
 
       {/* Other Clinical Checks */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
