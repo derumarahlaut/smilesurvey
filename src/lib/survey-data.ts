@@ -1,111 +1,45 @@
 export type Question = {
   id: string;
   question: string;
-  type: 'text' | 'number' | 'radio' | 'textarea' | 'date' | 'select' | 'custom';
+  type: 'text' | 'number' | 'radio' | 'select' | 'date' | 'custom';
   options?: string[];
   placeholder?: string;
-  sectionId: string;
-  component?: React.ComponentType<any>;
 };
 
-export type Section = {
-  id: string;
-  title: string;
-  questions: Question[];
-};
-
-export const sections: Section[] = [
-  {
-    id: 'exam-info',
-    title: 'Informasi Pemeriksaan',
-    questions: [
-       {
-        id: 'province',
-        question: 'Provinsi',
-        type: 'select',
-        sectionId: 'exam-info',
-      },
-      {
-        id: 'city',
-        question: 'Kota/Kabupaten',
-        type: 'select',
-        sectionId: 'exam-info',
-      },
-      {
-        id: 'exam-date',
-        question: 'Tanggal Pemeriksaan',
-        type: 'date',
-        sectionId: 'exam-info',
-      },
-    ],
-  },
-  {
-    id: 'patient-identity',
-    title: 'Identitas Pasien',
-    questions: [
-      {
-        id: 'name',
-        question: 'Nama Lengkap',
-        type: 'text',
-        placeholder: 'Contoh: John Doe',
-        sectionId: 'patient-identity',
-      },
-      {
-        id: 'gender',
-        question: 'Jenis Kelamin',
-        type: 'radio',
-        options: ['Laki-laki', 'Perempuan'],
-        sectionId: 'patient-identity',
-      },
-      {
-        id: 'birth-place',
-        question: 'Tempat Lahir',
-        type: 'text',
-        placeholder: 'Contoh: Bandung',
-        sectionId: 'patient-identity',
-      },
-       {
-        id: 'birth-date',
-        question: 'Tanggal Lahir',
-        type: 'date',
-        sectionId: 'patient-identity',
-      },
-      {
-        id: 'address',
-        question: 'Alamat',
-        type: 'textarea',
-        placeholder: 'Masukkan alamat lengkap',
-        sectionId: 'patient-identity',
-      },
-      {
-        id: 'occupation',
-        question: 'Pekerjaan',
-        type: 'radio',
-        options: ['Pelajar/Mahasiswa', 'Pegawai Negeri', 'Pegawai Swasta', 'Wiraswasta', 'Ibu Rumah Tangga', 'Tidak Bekerja', 'Pensiunan', 'Lainnya'],
-        sectionId: 'patient-identity',
-      },
-      {
-        id: 'education',
-        question: 'Pendidikan Terakhir',
-        type: 'radio',
-        options: ['SD', 'SMP', 'SMA', 'Diploma', 'Sarjana', 'S2', 'S3', 'Lainnya'],
-        sectionId: 'patient-identity',
-      },
-    ],
-  },
-  {
-    id: 'dental-check',
-    title: 'Pemeriksaan Klinis',
-    questions: [
-      {
+export const allQuestions: Question[] = [
+    // Based on the single-page layout
+    { id: 'exam-id', question: 'Nomor Urut', type: 'number' },
+    { id: 'name', question: 'Nama Pasien', type: 'text' },
+    { id: 'village', question: 'Desa/Kelurahan/Kecamatan', type: 'text' },
+    {
+      id: 'occupation',
+      question: 'Pekerjaan',
+      type: 'select',
+      options: ['Pelajar/Mahasiswa', 'Pegawai Negeri', 'Pegawai Swasta', 'Wiraswasta', 'Ibu Rumah Tangga', 'Tidak Bekerja', 'Pensiunan', 'Lainnya'],
+    },
+    { id: 'address', question: 'Alamat Pasien', type: 'text' },
+    { id: 'birth-date', question: 'Tanggal Lahir (Tgl/Bl/Th)', type: 'date' },
+    { id: 'gender', question: 'Jenis Kelamin (1=L, 2=P)', type: 'select', options: ['Laki-laki', 'Perempuan'] },
+    {
+      id: 'education',
+      question: 'Pendidikan Terakhir',
+      type: 'select',
+      options: ['SD', 'SMP', 'SMA', 'Diploma', 'Sarjana', 'S2', 'S3', 'Lainnya'],
+    },
+    // The odontogram and other clinical checks will be handled by the Odontogram component
+    {
         id: 'odontogram-chart',
-        question: 'Status Gigi Geligi',
+        question: 'Pemeriksaan Klinis',
         type: 'custom',
-        sectionId: 'dental-check',
-      }
-    ],
-  },
+    }
 ];
 
-
-export const allQuestions = sections.flatMap((section) => section.questions);
+// This structure is now flatter as we don't need sections for the single-page layout.
+// However, we can keep it if we want to group fields logically in the future.
+export const sections = [
+  {
+    id: 'main-form',
+    title: 'Form Pemeriksaan Gigi',
+    questions: allQuestions,
+  }
+];

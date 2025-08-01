@@ -4,62 +4,61 @@ import { useState, useTransition, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { AnimatePresence, motion } from 'framer-motion';
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { Question } from '@/lib/survey-data';
 import { allQuestions } from '@/lib/survey-data';
 import { submitSurvey } from '@/app/actions';
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { provinces, getCitiesByProvince } from '@/lib/location-data';
 import { Odontogram } from '@/components/odontogram';
 
-const createSchema = (questions: Question[]) => {
-  const schemaObject = questions.reduce((acc, q) => {
+const createSchema = () => {
+  const schemaObject = allQuestions.reduce((acc, q) => {
     let validator;
     switch (q.type) {
       case 'text':
       case 'textarea':
-        validator = z.string().min(1, { message: "Wajib diisi" });
+        validator = z.string().optional();
         break;
       case 'number':
-        validator = z.string().min(1, { message: "Wajib diisi" }).regex(/^\d+$/, "Harus berupa angka");
+        validator = z.string().optional();
         break;
       case 'radio':
       case 'select':
-        validator = z.string({ required_error: "Pilih salah satu opsi" }).min(1, "Wajib diisi");
+        validator = z.string().optional();
         break;
       case 'date':
-        validator = z.date({ required_error: "Tanggal wajib diisi" });
+        // For date, we can have separate fields
+        validator = z.object({
+          day: z.string().optional(),
+          month: z.string().optional(),
+          year: z.string().optional(),
+        }).optional();
         break;
       case 'custom':
-        if (q.id === 'odontogram-chart') {
-           validator = z.any().optional(); // Odontogram data will be handled separately
-        }
+         validator = z.any().optional();
         break;
       default:
-        validator = z.any();
+        validator = z.any().optional();
     }
-    if (validator) {
-      acc[q.id] = validator;
-    }
+    acc[q.id] = validator;
     return acc;
   }, {} as Record<string, z.ZodType<any, any>>);
-  return z.object(schemaObject);
+  
+  // Make all fields optional for single page submit
+  return z.object(schemaObject).partial();
 };
 
-const surveySchema = createSchema(allQuestions);
+
+const surveySchema = createSchema();
 type SurveyFormData = z.infer<typeof surveySchema>;
 
 function SearchableSelect({ field, options, placeholder, disabled, onValueChange }: { field: any, options: string[], placeholder: string, disabled?: boolean, onValueChange: (value: string) => void }) {
@@ -114,8 +113,54 @@ function SearchableSelect({ field, options, placeholder, disabled, onValueChange
     )
 }
 
+const DateOfBirthInput = ({ control, name }: { control: any, name: string }) => {
+    const years = Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i);
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+    return (
+        <div className="flex gap-2">
+            <Controller
+                name={`${name}.day`}
+                control={control}
+                render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger><SelectValue placeholder="Tgl" /></SelectTrigger>
+                        <SelectContent>
+                            {days.map(d => <SelectItem key={d} value={String(d)}>{d}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                )}
+            />
+            <Controller
+                name={`${name}.month`}
+                control={control}
+                render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger><SelectValue placeholder="Bln" /></SelectTrigger>
+                        <SelectContent>
+                            {months.map(m => <SelectItem key={m} value={String(m)}>{m}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                )}
+            />
+            <Controller
+                name={`${name}.year`}
+                control={control}
+                render={({ field }) => (
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger><SelectValue placeholder="Thn" /></SelectTrigger>
+                        <SelectContent>
+                            {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                )}
+            />
+        </div>
+    );
+};
+
 export function SurveyForm() {
-  const [step, setStep] = useState(0);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
@@ -137,32 +182,22 @@ export function SurveyForm() {
   }, [selectedProvince, form]);
 
 
-  const currentQuestion = allQuestions[step];
-  const isFirstStep = step === 0;
-  const isLastStep = step === allQuestions.length - 1;
-
-  const handleNext = async () => {
-    let isValid = true;
-    if (currentQuestion.type !== 'custom') {
-      isValid = await form.trigger(currentQuestion.id);
-    }
-
-    if (isValid && !isLastStep) {
-      setStep((prev) => prev + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (!isFirstStep) {
-      setStep((prev) => prev - 1);
-    }
-  };
-
   const onSubmit = (data: SurveyFormData) => {
     startTransition(async () => {
-      // Get odontogram data from the form
+      
+      let birthDate = '';
+      if (data['birth-date'] && data['birth-date'].year && data['birth-date'].month && data['birth-date'].day) {
+        const { year, month, day } = data['birth-date'];
+        birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
+
+      const transformedData = {
+        ...data,
+        'birth-date': birthDate
+      }
+      
       const odontogramData = form.getValues('odontogram-chart');
-      const combinedData = { ...data, ...odontogramData };
+      const combinedData = { ...transformedData, 'odontogram-chart': odontogramData };
 
       const result = await submitSurvey(combinedData);
       if (result?.error) {
@@ -174,110 +209,104 @@ export function SurveyForm() {
       }
     });
   };
-
-  const progressValue = (step / allQuestions.length) * 100;
-
-  const renderQuestion = (field: any) => {
-     switch (currentQuestion.type) {
-      case 'text':
-        return <Input id={currentQuestion.id} placeholder={currentQuestion.placeholder} {...field} />;
-      case 'number':
-        return <Input id={currentQuestion.id} type="number" placeholder={currentQuestion.placeholder} {...field} />;
-      case 'textarea':
-        return <Textarea id={currentQuestion.id} placeholder={currentQuestion.placeholder} {...field} />;
-      case 'date':
-        return (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {field.value ? format(field.value, "PPP") : <span>Pilih tanggal</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus captionLayout="dropdown-buttons" fromYear={1924} toYear={new Date().getFullYear()} />
-            </PopoverContent>
-          </Popover>
-        );
-      case 'radio':
-        return (
-          <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="space-y-2">
-            {currentQuestion.options?.map((option) => (
-              <div key={option} className="flex items-center space-x-2 rounded-md border p-4 hover:bg-accent/50 has-[[data-state=checked]]:bg-accent">
-                <RadioGroupItem value={option} id={`${currentQuestion.id}-${option}`} />
-                <Label htmlFor={`${currentQuestion.id}-${option}`} className="w-full cursor-pointer">{option}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-        );
-       case 'select':
-        if (currentQuestion.id === 'province') {
-           return <SearchableSelect field={field} options={provinces.map(p => p.name)} placeholder="Pilih Provinsi..." onValueChange={field.onChange} />;
-        }
-        if (currentQuestion.id === 'city') {
-           return <SearchableSelect field={field} options={cities} placeholder="Pilih Kota/Kabupaten..." disabled={!selectedProvince} onValueChange={field.onChange} />;
-        }
-        return null;
-      case 'custom':
-        if (currentQuestion.id === 'odontogram-chart') {
-           return <Odontogram form={form} />;
-        }
-        return null;
-      default:
-        return null;
-    }
+  
+  const FormField = ({ id, children }: { id: string, children: React.ReactNode }) => {
+      const question = allQuestions.find(q => q.id === id);
+      if (!question) return null;
+      return (
+          <div className="space-y-2">
+              <Label htmlFor={id}>{question.question}</Label>
+              {children}
+          </div>
+      )
   }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-      <Progress value={progressValue} className="w-full" />
-      
-      <div className="relative min-h-[300px] overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="w-full"
-          >
-            <div className="space-y-4">
-              <Label htmlFor={currentQuestion.id} className="text-xl text-center block">
-                {currentQuestion.question}
-              </Label>
-              <Controller
-                name={currentQuestion.id}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <div className="space-y-2">
-                    {renderQuestion(field)}
-                    {fieldState.error && <p className="text-sm font-medium text-destructive">{fieldState.error.message}</p>}
-                  </div>
-                )}
-              />
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField id="exam-id">
+                 <Controller name="exam-id" control={form.control} render={({ field }) => <Input {...field} id="exam-id" />} />
+              </FormField>
+              <FormField id="name">
+                 <Controller name="name" control={form.control} render={({ field }) => <Input {...field} id="name" />} />
+              </FormField>
+              <FormField id="village">
+                 <Controller name="village" control={form.control} render={({ field }) => <Input {...field} id="village" />} />
+              </FormField>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField id="occupation">
+                <Controller
+                    name="occupation"
+                    control={form.control}
+                    render={({ field }) => (
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger>
+                              <SelectValue placeholder="Pilih Pekerjaan..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {(allQuestions.find(q => q.id === 'occupation')?.options || []).map(opt => (
+                                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                    )} />
+            </FormField>
+            <FormField id="address">
+               <Controller name="address" control={form.control} render={({ field }) => <Input {...field} id="address" />} />
+            </FormField>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormField id="birth-date">
+                <DateOfBirthInput control={form.control} name="birth-date" />
+            </FormField>
+             <FormField id="gender">
+                <Controller
+                    name="gender"
+                    control={form.control}
+                    render={({ field }) => (
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger>
+                              <SelectValue placeholder="Pilih Jenis Kelamin..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                             <SelectItem value="1">Laki-laki</SelectItem>
+                             <SelectItem value="2">Perempuan</SelectItem>
+                          </SelectContent>
+                      </Select>
+                    )} />
+            </FormField>
+            <FormField id="education">
+                <Controller
+                    name="education"
+                    control={form.control}
+                    render={({ field }) => (
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger>
+                              <SelectValue placeholder="Pilih Pendidikan..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {(allQuestions.find(q => q.id === 'education')?.options || []).map(opt => (
+                                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                    )} />
+            </FormField>
+          </div>
+        </div>
 
-      <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={handlePrevious} disabled={isFirstStep || isPending}>
-          Kembali
-        </Button>
-        {isLastStep ? (
-          <Button type="submit" disabled={isPending}>
+        <div className="space-y-4">
+             <h3 className="text-lg font-medium">Status Gigi Geligi</h3>
+            <Odontogram form={form} />
+        </div>
+
+      <div className="flex justify-end">
+          <Button type="submit" disabled={isPending} size="lg">
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Selesai & Lihat Hasil
           </Button>
-        ) : (
-          <Button type="button" onClick={handleNext}>
-            Lanjut
-          </Button>
-        )}
       </div>
     </form>
   );

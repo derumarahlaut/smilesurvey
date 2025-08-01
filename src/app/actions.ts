@@ -3,42 +3,61 @@
 import { redirect } from 'next/navigation';
 import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
 import { allQuestions } from '@/lib/survey-data';
-import { format } from 'date-fns';
+
+// Helper to get question text by ID
+const getQuestionText = (id: string) => {
+  const question = allQuestions.find(q => q.id === id);
+  return question ? question.question : id;
+}
 
 export async function submitSurvey(formData: Record<string, any>) {
   try {
     const surveyResponses: Record<string, any> = {};
 
-    const { 'odontogram-chart': odontogramData, ...regularFormData } = formData;
-
-
-    // Manually add province and city to the responses object for the prompt
-    if (regularFormData.province) {
-        surveyResponses['Provinsi'] = regularFormData.province;
-    }
-     if (regularFormData.city) {
-        surveyResponses['Kota/Kabupaten'] = regularFormData.city;
-    }
-
-    for (const questionId in regularFormData) {
-      if (questionId === 'province' || questionId === 'city') continue;
-
-      const question = allQuestions.find(q => q.id === questionId);
-      if (question && regularFormData[questionId]) {
-        if (regularFormData[questionId] instanceof Date) {
-            surveyResponses[question.question] = format(regularFormData[questionId], 'yyyy-MM-dd');
-        } else {
-            surveyResponses[question.question] = regularFormData[questionId];
-        }
+    const { 'odontogram-chart': odontogramChartData, ...regularFormData } = formData;
+    
+    // Process regular form data
+    for (const id in regularFormData) {
+      if (regularFormData[id]) { // Ensure value is not empty
+        surveyResponses[getQuestionText(id)] = regularFormData[id];
       }
     }
     
-    // Add odontogram data to surveyResponses
-    if (odontogramData) {
-      surveyResponses['Pemeriksaan Klinis'] = JSON.stringify(odontogramData, null, 2);
+    // Process and flatten odontogram data
+    if (odontogramChartData) {
+      const clinicalCheck: Record<string, any> = {};
+      
+      // Separate tooth statuses from other clinical data
+      const toothStatus: Record<string, string> = {};
+      for (const key in odontogramChartData) {
+        if (key.startsWith('tooth-')) {
+          if(odontogramChartData[key]) toothStatus[key] = odontogramChartData[key];
+        } else {
+          if(odontogramChartData[key]) clinicalCheck[key] = odontogramChartData[key];
+        }
+      }
+
+      if(Object.keys(toothStatus).length > 0) {
+        surveyResponses['Status Gigi Geligi'] = JSON.stringify(toothStatus, null, 2);
+      }
+      
+      // Add other clinical checks to the main response object
+      if (clinicalCheck.bleedingGums) surveyResponses['Gusi berdarah'] = clinicalCheck.bleedingGums === '1' ? 'Ya' : 'Tidak';
+      if (clinicalCheck.oralLesion) surveyResponses['Lesi Mukosa Oral'] = clinicalCheck.oralLesion === '1' ? 'Ya' : 'Tidak';
+      if (clinicalCheck.treatmentNeed) {
+         const treatmentMap: Record<string, string> = { '0': 'tidak perlu perawatan', '1': 'perlu, tidak segera', '2': 'perlu, segera' };
+         surveyResponses['Kebutuhan perawatan segera'] = treatmentMap[clinicalCheck.treatmentNeed] || clinicalCheck.treatmentNeed;
+      }
+      if (clinicalCheck.referral) {
+        const referralMap: Record<string, string> = { '0': 'tidak perlu rujukan', '1': 'perlu rujukan' };
+        surveyResponses['Rujukan'] = referralMap[clinicalCheck.referral] || clinicalCheck.referral;
+        if (clinicalCheck.referral === '1' && clinicalCheck.referralLocation) {
+          surveyResponses['Lokasi Rujukan'] = clinicalCheck.referralLocation;
+        }
+      }
     }
 
-    if (Object.keys(surveyResponses).length <= 2) { // check for more than just province/city
+    if (Object.keys(surveyResponses).length === 0) {
       return { error: 'No responses provided.' };
     }
 
