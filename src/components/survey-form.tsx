@@ -5,27 +5,29 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import type { Section, Question } from '@/lib/survey-data';
+import type { Question } from '@/lib/survey-data';
 import { allQuestions } from '@/lib/survey-data';
 import { submitSurvey } from '@/app/actions';
-import { Loader2 } from 'lucide-react';
-
-type SurveyFormProps = {
-  sections: Section[];
-};
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 const createSchema = (questions: Question[]) => {
   const schemaObject = questions.reduce((acc, q) => {
     let validator;
     switch (q.type) {
       case 'text':
+      case 'textarea':
         validator = z.string().min(1, { message: "Wajib diisi" });
         break;
       case 'number':
@@ -33,6 +35,9 @@ const createSchema = (questions: Question[]) => {
         break;
       case 'radio':
         validator = z.string({ required_error: "Pilih salah satu opsi" });
+        break;
+      case 'date':
+        validator = z.date({ required_error: "Tanggal wajib diisi" });
         break;
       default:
         validator = z.any();
@@ -46,7 +51,7 @@ const createSchema = (questions: Question[]) => {
 const surveySchema = createSchema(allQuestions);
 type SurveyFormData = z.infer<typeof surveySchema>;
 
-export function SurveyForm({ sections }: SurveyFormProps) {
+export function SurveyForm() {
   const [step, setStep] = useState(0);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -116,6 +121,33 @@ export function SurveyForm({ sections }: SurveyFormProps) {
                     )}
                     {currentQuestion.type === 'number' && (
                       <Input id={currentQuestion.id} type="number" placeholder={currentQuestion.placeholder} {...field} />
+                    )}
+                     {currentQuestion.type === 'textarea' && (
+                      <Textarea id={currentQuestion.id} placeholder={currentQuestion.placeholder} {...field} />
+                    )}
+                    {currentQuestion.type === 'date' && (
+                       <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? format(field.value, "PPP") : <span>Pilih tanggal</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     )}
                     {currentQuestion.type === 'radio' && currentQuestion.options && (
                       <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="space-y-2">

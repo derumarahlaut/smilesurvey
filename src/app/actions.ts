@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
 import { allQuestions } from '@/lib/survey-data';
+import { format } from 'date-fns';
 
 export async function submitSurvey(formData: Record<string, any>) {
   try {
@@ -11,7 +12,11 @@ export async function submitSurvey(formData: Record<string, any>) {
     for (const questionId in formData) {
       const question = allQuestions.find(q => q.id === questionId);
       if (question && formData[questionId]) {
-        surveyResponses[question.question] = formData[questionId];
+        if (formData[questionId] instanceof Date) {
+            surveyResponses[question.question] = format(formData[questionId], 'yyyy-MM-dd');
+        } else {
+            surveyResponses[question.question] = formData[questionId];
+        }
       }
     }
 

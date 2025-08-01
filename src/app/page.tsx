@@ -11,9 +11,9 @@ export default function Home() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
             <ToothIcon className="h-8 w-8" />
           </div>
-          <CardTitle className="font-headline text-4xl">SmileSurvey</CardTitle>
+          <CardTitle className="font-headline text-4xl">Survei Kesehatan Gigi</CardTitle>
           <CardDescription className="text-lg">
-            Bantu kami memahami kesehatan gigi Anda.
+            Formulir Pemeriksaan Kesehatan Gigi sesuai standar WHO.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,7 +1,7 @@
 export type Question = {
   id: string;
   question: string;
-  type: 'text' | 'number' | 'radio';
+  type: 'text' | 'number' | 'radio' | 'textarea' | 'date';
   options?: string[];
   placeholder?: string;
   sectionId: string;
@@ -15,84 +15,120 @@ export type Section = {
 
 export const sections: Section[] = [
   {
-    id: 'personal-info',
-    title: 'Informasi Pribadi',
+    id: 'exam-info',
+    title: 'Informasi Pemeriksaan',
+    questions: [
+      {
+        id: 'city',
+        question: 'Nama Kota/Kabupaten',
+        type: 'text',
+        placeholder: 'Contoh: Jakarta',
+        sectionId: 'exam-info',
+      },
+      {
+        id: 'exam-date',
+        question: 'Tanggal Pemeriksaan',
+        type: 'date',
+        sectionId: 'exam-info',
+      },
+    ],
+  },
+  {
+    id: 'patient-identity',
+    title: 'Identitas Pasien',
     questions: [
       {
         id: 'name',
-        question: 'Nama Lengkap Anda',
+        question: 'Nama Lengkap',
         type: 'text',
         placeholder: 'Contoh: John Doe',
-        sectionId: 'personal-info',
+        sectionId: 'patient-identity',
       },
       {
-        id: 'age',
-        question: 'Usia Anda (tahun)',
-        type: 'number',
-        placeholder: 'Contoh: 25',
-        sectionId: 'personal-info',
+        id: 'gender',
+        question: 'Jenis Kelamin',
+        type: 'radio',
+        options: ['Laki-laki', 'Perempuan'],
+        sectionId: 'patient-identity',
+      },
+      {
+        id: 'birth-info',
+        question: 'Tempat, Tanggal Lahir',
+        type: 'text',
+        placeholder: 'Contoh: Bandung, 17 Agustus 1990',
+        sectionId: 'patient-identity',
+      },
+      {
+        id: 'address',
+        question: 'Alamat',
+        type: 'textarea',
+        placeholder: 'Masukkan alamat lengkap',
+        sectionId: 'patient-identity',
+      },
+      {
+        id: 'occupation',
+        question: 'Pekerjaan',
+        type: 'text',
+        placeholder: 'Contoh: Pelajar',
+        sectionId: 'patient-identity',
+      },
+      {
+        id: 'education',
+        question: 'Pendidikan Terakhir',
+        type: 'radio',
+        options: ['SD', 'SMP', 'SMA', 'Diploma', 'Sarjana', 'Lainnya'],
+        sectionId: 'patient-identity',
       },
     ],
   },
   {
-    id: 'dental-history',
-    title: 'Riwayat Kesehatan Gigi',
+    id: 'dental-check',
+    title: 'Pemeriksaan Klinis',
     questions: [
       {
-        id: 'last-visit',
-        question: 'Kapan terakhir kali Anda mengunjungi dokter gigi?',
-        type: 'radio',
-        options: ['Dalam 6 bulan terakhir', '6 bulan - 1 tahun yang lalu', 'Lebih dari 1 tahun yang lalu', 'Tidak pernah'],
-        sectionId: 'dental-history',
+        id: 'odontogram',
+        question: 'Odontogram (Catatan)',
+        type: 'textarea',
+        placeholder: 'Catat temuan pada odontogram...',
+        sectionId: 'dental-check',
       },
       {
-        id: 'current-pain',
-        question: 'Apakah Anda merasakan sakit gigi saat ini?',
+        id: 'gum-check',
+        question: 'Pemeriksaan Gusi',
+        type: 'textarea',
+        placeholder: 'Catat hasil pemeriksaan gusi...',
+        sectionId: 'dental-check',
+      },
+      {
+        id: 'mucosal-lesion',
+        question: 'Lesi Mukosa Oral',
+        type: 'textarea',
+        placeholder: 'Catat jika ada lesi mukosa oral...',
+        sectionId: 'dental-check',
+      },
+    ],
+  },
+  {
+    id: 'treatment-plan',
+    title: 'Kebutuhan Perawatan',
+    questions: [
+      {
+        id: 'treatment-needs',
+        question: 'Kebutuhan Perawatan',
+        type: 'textarea',
+        placeholder: 'Jelaskan kebutuhan perawatan...',
+        sectionId: 'treatment-plan',
+      },
+      {
+        id: 'referral',
+        question: 'Rujukan',
         type: 'radio',
         options: ['Ya', 'Tidak'],
-        sectionId: 'dental-history',
-      },
-    ],
-  },
-  {
-    id: 'oral-hygiene',
-    title: 'Kebiasaan Perawatan Gigi',
-    questions: [
-      {
-        id: 'brushing-frequency',
-        question: 'Seberapa sering Anda menyikat gigi dalam sehari?',
-        type: 'radio',
-        options: ['Sekali sehari', 'Dua kali sehari', 'Tiga kali atau lebih', 'Tidak setiap hari'],
-        sectionId: 'oral-hygiene',
-      },
-    ],
-  },
-  {
-    id: 'diet-habits',
-    title: 'Kebiasaan Makan dan Minum',
-    questions: [
-      {
-        id: 'sweet-intake',
-        question: 'Seberapa sering Anda mengonsumsi makanan atau minuman manis?',
-        type: 'radio',
-        options: ['Jarang (beberapa kali sebulan)', 'Kadang-kadang (beberapa kali seminggu)', 'Sering (hampir setiap hari)'],
-        sectionId: 'diet-habits',
-      },
-    ],
-  },
-  {
-    id: 'lifestyle',
-    title: 'Gaya Hidup',
-    questions: [
-      {
-        id: 'smoking',
-        question: 'Apakah Anda merokok?',
-        type: 'radio',
-        options: ['Ya', 'Tidak'],
-        sectionId: 'lifestyle',
+        sectionId: 'treatment-plan',
       },
     ],
   },
 ];
+
 
 export const allQuestions = sections.flatMap((section) => section.questions);
