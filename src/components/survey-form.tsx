@@ -71,7 +71,7 @@ const surveySchema = createSchema();
 type SurveyFormData = z.infer<typeof surveySchema>;
 
 function SearchableSelect({ field, options, placeholder, disabled, onValueChange }: { field: any, options: string[], placeholder: string, disabled?: boolean, onValueChange: (value: string) => void }) {
-    const [open, setOpen] = useState(false)
+    const [open, setOpen] = useState(false);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -114,7 +114,7 @@ function SearchableSelect({ field, options, placeholder, disabled, onValueChange
                                     {option}
                                 </CommandItem>
                             ))}
-                        </Group>
+                        </CommandGroup>
                     </CommandList>
                 </Command>
             </PopoverContent>
