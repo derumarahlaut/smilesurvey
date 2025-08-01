@@ -211,6 +211,7 @@ export async function saveSurvey(formData: Record<string, any>, existingExamId?:
     await setDoc(doc(db, "patients", fullExamId!), dataToSave, { merge: true });
     revalidatePath('/master');
     revalidatePath('/dashboard');
+    revalidatePath(`/master/${fullExamId}`);
     revalidatePath(`/master/${fullExamId}/edit`);
     return { success: true, examId: fullExamId };
   } catch (error: any) {
@@ -261,14 +262,20 @@ export async function getPatient(examId: string) {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      if (data['exam-date']) {
-          data['exam-date'] = new Date(data['exam-date']);
+      // Ensure dates are in the right format for display or editing
+      if (data['exam-date'] && typeof data['exam-date'] === 'string') {
+          // Add time to prevent timezone shift issues on client
+          data['exam-date'] = new Date(data['exam-date'] + 'T00:00:00');
       }
-      if (data['birth-date']) {
+      if (data['birth-date'] && typeof data['birth-date'] === 'string') {
           const [year, month, day] = data['birth-date'].split('-').map(Number);
           data['birth-date'] = { day: String(day), month: String(month), year: String(year) };
       }
-      return { success: true, patient: data };
+      const fullData = {
+          ...data,
+          ...processFormData(data), // Add processed data like scores
+      };
+      return { success: true, patient: fullData };
     } else {
       return { error: "Pasien tidak ditemukan." };
     }
