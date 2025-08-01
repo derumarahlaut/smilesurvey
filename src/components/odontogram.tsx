@@ -33,14 +33,14 @@ const adultTeeth = {
   upperRight: [18, 17, 16, 15, 14, 13, 12, 11],
   upperLeft: [21, 22, 23, 24, 25, 26, 27, 28],
   lowerLeft: [31, 32, 33, 34, 35, 36, 37, 38],
-  lowerRight: [48, 47, 46, 45, 44, 43, 42, 41].reverse(),
+  lowerRight: [41, 42, 43, 44, 45, 46, 47, 48],
 };
 
 const childTeeth = {
     upperRight: [55, 54, 53, 52, 51],
     upperLeft: [61, 62, 63, 64, 65],
     lowerLeft: [71, 72, 73, 74, 75],
-    lowerRight: [85, 84, 83, 82, 81].reverse(),
+    lowerRight: [81, 82, 83, 84, 85],
 };
 
 const allAdultTeethIds = Object.values(adultTeeth).flat();
@@ -162,11 +162,11 @@ export function Odontogram({ form }: { form: any }) {
             <span>RA Kanan</span>
             <span>RA Kiri</span>
           </div>
-          <ToothRow control={control} teeth={[...adultTeeth.upperRight, ...adultTeeth.upperLeft]} type="permanent" />
-          <ToothRow control={control} teeth={[...childTeeth.upperRight, ...childTeeth.upperLeft]} type="primary" />
+          <ToothRow control={control} teeth={[...adultTeeth.upperRight.slice().reverse(), ...adultTeeth.upperLeft]} type="permanent" />
+          <ToothRow control={control} teeth={[...childTeeth.upperRight.slice().reverse(), ...childTeeth.upperLeft]} type="primary" />
           <div className="border-t-2 border-black my-2"></div>
-          <ToothRow control={control} teeth={[...childTeeth.lowerRight, ...childTeeth.lowerLeft]} type="primary" />
-          <ToothRow control={control} teeth={[...adultTeeth.lowerRight.reverse(), ...adultTeeth.lowerLeft]} type="permanent" />
+          <ToothRow control={control} teeth={[...childTeeth.lowerRight.slice().reverse(), ...childTeeth.lowerLeft]} type="primary" />
+          <ToothRow control={control} teeth={[...adultTeeth.lowerRight.slice().reverse(), ...adultTeeth.lowerLeft]} type="permanent" />
           <div className="flex justify-between text-sm font-bold px-4">
             <span>RB Kanan</span>
             <span>RB Kiri</span>
