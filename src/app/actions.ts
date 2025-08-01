@@ -9,6 +9,7 @@ import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, lim
 import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format, differenceInYears, parse } from 'date-fns';
+import nodemailer from 'nodemailer';
 
 
 async function getNextPatientSequence(idPrefix: string): Promise<string> {
@@ -288,6 +289,65 @@ export async function getPatient(examId: string) {
   }
 }
 
+async function sendVerificationEmail(patientData: any) {
+    const {
+        EMAIL_HOST,
+        EMAIL_PORT,
+        EMAIL_USER,
+        EMAIL_PASS,
+    } = process.env;
+
+    if (!EMAIL_HOST || !EMAIL_PORT || !EMAIL_USER || !EMAIL_PASS) {
+        console.warn("Konfigurasi email tidak lengkap. Melewatkan pengiriman email.");
+        console.log("SIMULASI: Mengirim notifikasi verifikasi ke email:", patientData.email);
+        return { success: false, message: 'Konfigurasi email tidak lengkap di server.' };
+    }
+
+    const transporter = nodemailer.createTransport({
+        host: EMAIL_HOST,
+        port: parseInt(EMAIL_PORT, 10),
+        secure: parseInt(EMAIL_PORT, 10) === 465, // true for 465, false for other ports
+        auth: {
+            user: EMAIL_USER,
+            pass: EMAIL_PASS,
+        },
+    });
+    
+    const processedData = processFormData(patientData);
+
+    let emailHtml = `
+      <h1>Data Pemeriksaan Gigi Anda Telah Diverifikasi</h1>
+      <p>Halo ${patientData.name},</p>
+      <p>Data pemeriksaan gigi Anda telah berhasil diverifikasi pada tanggal ${new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}. Berikut adalah ringkasan data Anda:</p>
+      <ul>
+        <li><strong>Nomor Urut:</strong> ${patientData['exam-id']}</li>
+        <li><strong>Nama:</strong> ${patientData.name}</li>
+        <li><strong>Tanggal Pemeriksaan:</strong> ${patientData['exam-date']}</li>
+        <li><strong>Skor DMF-T:</strong> ${processedData['DMF-T Score']}</li>
+        <li><strong>Skor def-t:</strong> ${processedData['def-t Score']}</li>
+      </ul>
+      <p>Terima kasih telah berpartisipasi.</p>
+      <br/>
+      <p>Hormat kami,</p>
+      <p>Tim SmileSurvey</p>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: `"Tim SmileSurvey" <${EMAIL_USER}>`,
+            to: patientData.email,
+            subject: 'Data Pemeriksaan Gigi Anda Telah Diverifikasi',
+            html: emailHtml,
+        });
+        console.log(`Email verifikasi berhasil dikirim ke: ${patientData.email}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Gagal mengirim email:", error);
+        return { success: false, message: 'Gagal mengirim email notifikasi.' };
+    }
+}
+
+
 export async function verifyPatient(examId: string, verifierName: string, patientData: any) {
   if (!verifierName) {
     return { error: 'Nama verifikator harus diisi.' };
@@ -299,10 +359,9 @@ export async function verifyPatient(examId: string, verifierName: string, patien
       verifiedAt: Timestamp.now(),
     });
 
-    // Simulate sending notification
+    // Send notifications
     if (patientData?.email) {
-        console.log(`SIMULASI: Mengirim notifikasi verifikasi ke email: ${patientData.email}`);
-        // TODO: Tambahkan integrasi layanan email di sini
+        await sendVerificationEmail(patientData);
     }
     if (patientData?.phone) {
         console.log(`SIMULASI: Mengirim notifikasi verifikasi ke WhatsApp: ${patientData.phone}`);
@@ -442,4 +501,3 @@ export async function getDashboardAnalysis(filters: {
     return { error: `Gagal menghasilkan analisis: ${error.message || 'Error tidak diketahui'}` };
   }
 }
-
