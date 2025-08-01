@@ -114,30 +114,43 @@ export async function saveSurvey(formData: Record<string, any>) {
   try {
     const dataToSave = { ...formData };
     
-    // Convert date objects to strings before saving to Firestore
-    if (dataToSave['exam-date'] instanceof Date) {
-        dataToSave['exam-date'] = dataToSave['exam-date'].toISOString().split('T')[0];
-    } else if (dataToSave['exam-date']) {
-        // if it's already a string, ensure format is consistent
+    // Robustly convert exam-date to a string
+    if (dataToSave['exam-date']) {
+      try {
         dataToSave['exam-date'] = new Date(dataToSave['exam-date']).toISOString().split('T')[0];
+      } catch (e) {
+        // if conversion fails, it might be an invalid date, so we remove it
+        delete dataToSave['exam-date'];
+      }
     }
 
+    // Robustly convert birth-date to a string
     if (dataToSave['birth-date'] && typeof dataToSave['birth-date'] === 'object') {
         const { day, month, year } = dataToSave['birth-date'];
-        if (day && month && year) {
+        if (day && month && year && !isNaN(parseInt(year)) && !isNaN(parseInt(month)) && !isNaN(parseInt(day))) {
             // Month in JS Date is 0-indexed, so subtract 1
             const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            // Check if the created date is valid
             if (!isNaN(date.getTime())) {
               dataToSave['birth-date'] = date.toISOString().split('T')[0];
             } else {
-              delete dataToSave['birth-date'];
+              delete dataToSave['birth-date']; // Invalid date components
             }
         } else {
-             delete dataToSave['birth-date'];
+             delete dataToSave['birth-date']; // Incomplete date components
         }
+    } else if (dataToSave['birth-date']) {
+      // It might be an already stringified date, just ensure format is correct
+       try {
+        dataToSave['birth-date'] = new Date(dataToSave['birth-date']).toISOString().split('T')[0];
+      } catch (e) {
+        delete dataToSave['birth-date'];
+      }
     } else {
+        // Ensure birth-date field is removed if it's null/undefined/empty
         delete dataToSave['birth-date'];
     }
+
 
     await setDoc(doc(db, "patients", examId), dataToSave);
     revalidatePath('/master');
