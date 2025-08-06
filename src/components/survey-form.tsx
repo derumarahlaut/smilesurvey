@@ -209,7 +209,7 @@ export function SurveyForm() {
       city: '',
       agency: 'Dinas Kesehatan Provinsi Jawa Barat',
       'odontogram-chart': defaultOdontogram,
-      'exam-date': new Date(),
+      'exam-date': undefined,
       'exam-id-suffix': '',
        'birth-date': { day: '', month: '', year: '' }
     }
@@ -279,6 +279,12 @@ export function SurveyForm() {
 
   }, [selectedProvince, selectedCity, examDate]);
   
+  useEffect(() => {
+    // Set the date on the client side to avoid hydration mismatch
+    form.setValue('exam-date', new Date());
+  }, [form]);
+
+
   const FormField = ({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) => {
       const question = allQuestions.find(q => q.id === id);
       if (!question) return null;
