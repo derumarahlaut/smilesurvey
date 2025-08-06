@@ -43,16 +43,22 @@ npm -v
 
 The best practice for getting your project files onto the server is to clone them from your Git repository.
 
-```bash
-# Navigate to the directory where you want to store your projects
-cd /var/www
+1.  **How to Find Your Repository URL:**
+    -   Navigate to your project's main page on your Git hosting service (e.g., GitHub).
+    -   Look for a green button labeled **`< > Code`**.
+    -   Click it, ensure the **HTTPS** tab is selected, and copy the URL. It will look like `https://github.com/your-username/your-repo-name.git`.
 
-# Replace with your repository URL
-git clone https://github.com/your-username/your-repo-name.git
+2.  **Clone the Repository on Your Server:**
+    ```bash
+    # Navigate to the directory where you want to store your projects
+    cd /var/www
 
-# Navigate into the project directory
-cd your-repo-name
-```
+    # Replace with your actual repository URL
+    git clone https://github.com/your-username/your-repo-name.git
+
+    # Navigate into the project directory
+    cd your-repo-name
+    ```
 
 #### Step 3: Install Dependencies
 
@@ -138,15 +144,21 @@ This section explains how to deploy the application using the aaPanel interface.
 
 Instead of uploading a zip file, the recommended method is to use Git. This makes future updates much easier.
 
-1.  Navigate to **Files** in aaPanel.
-2.  Go to the directory `/www/wwwroot`.
-3.  Click the **Terminal** icon at the top of the file manager.
-4.  A terminal window will open. In this terminal, clone your project from GitHub:
-    ```bash
-    # Replace with your repository URL
-    git clone https://github.com/your-username/your-repo-name.git smilesurvey
-    ```
-    This will create a new folder named `smilesurvey` containing all your project files. If you update your code later, you can simply open this terminal again and run `git pull`.
+1.  **How to Find Your Repository URL:**
+    -   Navigate to your project's main page on your Git hosting service (e.g., GitHub).
+    -   Look for a green button labeled **`< > Code`**.
+    -   Click it, ensure the **HTTPS** tab is selected, and copy the URL. It will look like `https://github.com/your-username/your-repo-name.git`.
+
+2.  **Clone the Repository in aaPanel:**
+    -   Navigate to **Files** in aaPanel.
+    -   Go to the directory `/www/wwwroot`.
+    -   Click the **Terminal** icon at the top of the file manager.
+    -   A terminal window will open. In this terminal, clone your project:
+        ```bash
+        # Replace with your actual repository URL
+        git clone https://github.com/your-username/your-repo-name.git smilesurvey
+        ```
+    -   This will create a new folder named `smilesurvey` containing all your project files. If you update your code later, you can simply open this terminal again and run `git pull`.
 
 #### Step 2: Add Node Project in aaPanel
 
