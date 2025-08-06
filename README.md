@@ -18,7 +18,7 @@ This section covers the traditional method of deploying via the command line.
 
 -   An Ubuntu server (e.g., from AWS, Google Cloud, DigitalOcean).
 -   `ssh` access to your server.
--   A Git repository for your project (e.g., on GitHub).
+-   A local copy of your project files (e.g., in a zip file).
 -   A domain name pointed to your server's IP address (optional but recommended for production).
 
 #### Step 1: Install Node.js and npm
@@ -39,25 +39,30 @@ node -v
 npm -v
 ```
 
-#### Step 2: Clone Your Application from Git
+#### Step 2: Upload and Unzip Your Application
 
-The best practice for getting your project files onto the server is to clone them from your Git repository.
-
-1.  **How to Find Your Repository URL:**
-    -   Navigate to your project's main page on your Git hosting service (e.g., GitHub).
-    -   Look for a green button labeled **`< > Code`**.
-    -   Click it, ensure the **HTTPS** tab is selected, and copy the URL. It will look like `https://github.com/your-username/your-repo-name.git`.
-
-2.  **Clone the Repository on Your Server:**
+1.  **Get Your Project Files**: You will need a `.zip` file of your entire project.
+2.  **Upload to Server**: Use a tool like `scp` (from your local terminal) or an SFTP client (like FileZilla) to upload the zip file to your server. For example:
     ```bash
-    # Navigate to the directory where you want to store your projects
+    # In your local computer's terminal
+    scp /path/to/your/project.zip your_username@your_server_ip:/var/www/
+    ```
+3.  **Unzip the Project**: Connect to your server via `ssh` and unzip the file.
+    ```bash
+    # Connect to your server
+    ssh your_username@your_server_ip
+
+    # Navigate to the target directory
     cd /var/www
 
-    # Replace with your actual repository URL
-    git clone https://github.com/your-username/your-repo-name.git
+    # Install the unzip tool if you don't have it
+    sudo apt install -y unzip
 
+    # Unzip the project and rename the folder
+    unzip project.zip -d smilesurvey
+    
     # Navigate into the project directory
-    cd your-repo-name
+    cd smilesurvey
     ```
 
 #### Step 3: Install Dependencies
@@ -137,28 +142,22 @@ This section explains how to deploy the application using the aaPanel interface.
 
 -   aaPanel installed on your Ubuntu server.
 -   **Node.js Manager** installed from the aaPanel App Store.
--   A Git repository for your project (e.g., on GitHub).
+-   A `.zip` file containing all your project files.
 -   Your domain name (e.g., `skg.polkesban.online`) is pointed to your server's IP address.
 
 #### Step 1: Get Your Project Files onto the Server
 
-Instead of uploading a zip file, the recommended method is to use Git. This makes future updates much easier.
-
-1.  **How to Find Your Repository URL:**
-    -   Navigate to your project's main page on your Git hosting service (e.g., GitHub).
-    -   Look for a green button labeled **`< > Code`**.
-    -   Click it, ensure the **HTTPS** tab is selected, and copy the URL. It will look like `https://github.com/your-username/your-repo-name.git`.
-
-2.  **Clone the Repository in aaPanel:**
-    -   Navigate to **Files** in aaPanel.
-    -   Go to the directory `/www/wwwroot`.
-    -   Click the **Terminal** icon at the top of the file manager.
-    -   A terminal window will open. In this terminal, clone your project:
-        ```bash
-        # Replace with your actual repository URL
-        git clone https://github.com/your-username/your-repo-name.git smilesurvey
-        ```
-    -   This will create a new folder named `smilesurvey` containing all your project files. If you update your code later, you can simply open this terminal again and run `git pull`.
+1.  **Get Your Project Files**: You will first need to download a `.zip` file of your project from Firebase Studio. After this chat, you will be given the option to download the project.
+2.  **Upload via aaPanel File Manager**:
+    -   Log in to your aaPanel dashboard.
+    -   Navigate to **Files** from the left-hand menu.
+    -   Go to the directory where you want to store your sites, which is typically `/www/wwwroot`.
+    -   Click the **Upload** button at the top.
+    -   In the popup, select the `smilesurvey.zip` file from your computer and upload it.
+3.  **Unzip the File**:
+    -   Once the upload is complete, you will see `smilesurvey.zip` in the file list.
+    -   Right-click on the zip file and select **Unzip**.
+    -   A folder named `smilesurvey` will be created. This is your project root.
 
 #### Step 2: Add Node Project in aaPanel
 
@@ -181,7 +180,7 @@ Instead of uploading a zip file, the recommended method is to use Git. This make
 2.  Click the **Module** button for your project.
 3.  Click **Install** to run `npm install`.
 4.  After installation, navigate back to **Files**.
-5.  Go to your project directory (`/www/wwwroot/smilesurvey`) and click the **Terminal** button.
+5.  Go to your project directory (`/www/wwwroot/smilesurvey`) and click the **Terminal** button at the top of the file manager.
 6.  In the terminal window, run the build command:
     ```bash
     npm run build
