@@ -21,7 +21,10 @@ This section covers the traditional method of deploying via the command line.
 -   A local copy of your project files (e.g., in a zip file).
 -   A domain name pointed to your server's IP address (optional but recommended for production).
 
-#### Step 1: Install Node.js and npm
+#### Step 1: Get Your Project Files
+After this chat session is complete, Firebase Studio will provide you with an option to **download your project as a `.zip` file**. Download this file to your local computer.
+
+#### Step 2: Install Node.js and npm
 
 Your Next.js application requires a Node.js runtime. If you don't have it installed, connect to your server via `ssh` and run the following commands:
 
@@ -39,15 +42,14 @@ node -v
 npm -v
 ```
 
-#### Step 2: Upload and Unzip Your Application
+#### Step 3: Upload and Unzip Your Application
 
-1.  **Get Your Project Files**: You will need a `.zip` file of your entire project.
-2.  **Upload to Server**: Use a tool like `scp` (from your local terminal) or an SFTP client (like FileZilla) to upload the zip file to your server. For example:
+1.  **Upload to Server**: Use a tool like `scp` (from your local terminal) or an SFTP client (like FileZilla) to upload the `.zip` file from your computer to your server. For example:
     ```bash
-    # In your local computer's terminal
-    scp /path/to/your/project.zip your_username@your_server_ip:/var/www/
+    # In your local computer's terminal, navigate to where you saved the zip file
+    scp ./smilesurvey.zip your_username@your_server_ip:/var/www/
     ```
-3.  **Unzip the Project**: Connect to your server via `ssh` and unzip the file.
+2.  **Unzip the Project**: Connect to your server via `ssh` and unzip the file.
     ```bash
     # Connect to your server
     ssh your_username@your_server_ip
@@ -58,14 +60,14 @@ npm -v
     # Install the unzip tool if you don't have it
     sudo apt install -y unzip
 
-    # Unzip the project and rename the folder
-    unzip project.zip -d smilesurvey
+    # Unzip the project. This will create a 'smilesurvey' folder.
+    unzip smilesurvey.zip -d smilesurvey
     
     # Navigate into the project directory
     cd smilesurvey
     ```
 
-#### Step 3: Install Dependencies
+#### Step 4: Install Dependencies
 
 Install the necessary `npm` packages defined in `package.json`.
 
@@ -73,7 +75,7 @@ Install the necessary `npm` packages defined in `package.json`.
 npm install
 ```
 
-#### Step 4: Set Up Environment Variables
+#### Step 5: Set Up Environment Variables
 
 Your application requires environment variables. Create a `.env` file in the root of your project.
 
@@ -95,7 +97,7 @@ EMAIL_PASS="your_email_or_app_password"
 ```
 Press `Ctrl+X`, then `Y`, then `Enter` to save and exit `nano`.
 
-#### Step 5: Build the Application
+#### Step 6: Build the Application
 
 Create a production-optimized build of your Next.js app.
 
@@ -104,7 +106,7 @@ npm run build
 ```
 This command will create a `.next` directory with the production build.
 
-#### Step 6: Run the Application with a Process Manager (pm2)
+#### Step 7: Run the Application with a Process Manager (pm2)
 
 For a production environment, use a process manager like `pm2` to keep your app running.
 
@@ -134,6 +136,8 @@ For a production environment, use a process manager like `pm2` to keep your app 
 
 Your application should now be running!
 
+---
+
 ### 2. aaPanel Deployment
 
 This section explains how to deploy the application using the aaPanel interface.
@@ -142,24 +146,26 @@ This section explains how to deploy the application using the aaPanel interface.
 
 -   aaPanel installed on your Ubuntu server.
 -   **Node.js Manager** installed from the aaPanel App Store.
--   A `.zip` file containing all your project files.
--   Your domain name (e.g., `skg.polkesban.online`) is pointed to your server's IP address.
+-   A domain name (e.g., `skg.polkesban.online`) is pointed to your server's IP address.
 
-#### Step 1: Get Your Project Files onto the Server
+#### Step 1: Get Your Project Files
 
-1.  **Get Your Project Files**: You will first need to download a `.zip` file of your project from Firebase Studio. After this chat, you will be given the option to download the project.
-2.  **Upload via aaPanel File Manager**:
+After this chat session with the AI is complete, **Firebase Studio will give you an option to download your entire project as a `smilesurvey.zip` file**. Download this file to your computer.
+
+#### Step 2: Upload and Unzip in aaPanel
+
+1.  **Upload via aaPanel File Manager**:
     -   Log in to your aaPanel dashboard.
     -   Navigate to **Files** from the left-hand menu.
     -   Go to the directory where you want to store your sites, which is typically `/www/wwwroot`.
     -   Click the **Upload** button at the top.
     -   In the popup, select the `smilesurvey.zip` file from your computer and upload it.
-3.  **Unzip the File**:
+2.  **Unzip the File**:
     -   Once the upload is complete, you will see `smilesurvey.zip` in the file list.
     -   Right-click on the zip file and select **Unzip**.
     -   A folder named `smilesurvey` will be created. This is your project root.
 
-#### Step 2: Add Node Project in aaPanel
+#### Step 3: Add Node Project in aaPanel
 
 1.  Navigate to **Website** in aaPanel.
 2.  Click on **Add Node project**.
@@ -174,7 +180,7 @@ This section explains how to deploy the application using the aaPanel interface.
 
 4.  Click **Confirm**.
 
-#### Step 3: Install Dependencies and Build
+#### Step 4: Install Dependencies and Build
 
 1.  After adding the project, go back to the Node project list.
 2.  Click the **Module** button for your project.
@@ -185,9 +191,9 @@ This section explains how to deploy the application using the aaPanel interface.
     ```bash
     npm run build
     ```
-    This creates the `.next` production folder.
+    This creates the `.next` production folder. Close the terminal when it's done.
 
-#### Step 4: Set Environment Variables
+#### Step 5: Set Environment Variables
 
 1.  In the Node project list, click on your project's **Path** to open the project settings.
 2.  Go to the **Environment variable** tab.
