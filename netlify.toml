@@ -4,6 +4,12 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  DB_HOST = "31.97.48.178"
+  DB_PORT = "3306"
+  DB_USER = "sql_skg_polkesba"
+  DB_PASSWORD = "pajajaran56"
+  DB_NAME = "sql_skg_polkesba"
+  NODE_ENV = "production"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
