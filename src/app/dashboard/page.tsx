@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { List, Home, FileText, BarChart, Users, MapPin, Activity, Lightbulb, AlertTriangle, Loader2, Calendar as CalendarIcon, Filter, X } from 'lucide-react';
 import { getDashboardAnalysis } from '@/app/actions';
-import type { DentalAnalysisOutput } from '@/ai/flows/analyze-dental-data';
+// Temporarily disable AI types for deployment
+// import type { DentalAnalysisOutput } from '@/ai/flows/analyze-dental-data';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -33,7 +34,7 @@ const StatCard = ({ title, value, icon }: { title: string; value: string | numbe
 
 
 export default function DashboardPage() {
-  const [analysis, setAnalysis] = useState<DentalAnalysisOutput | null>(null);
+  const [analysis, setAnalysis] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [language, setLanguage] = useState('indonesian');
