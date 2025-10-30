@@ -1,8 +1,9 @@
 
 'use server';
 
-import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
-import { analyzeDentalData, type DentalAnalysisInput } from '@/ai/flows/analyze-dental-data';
+// Temporary disable AI functionality for deployment
+// import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
+// import { analyzeDentalData, type DentalAnalysisInput } from '@/ai/flows/analyze-dental-data';
 import { allQuestions } from '@/lib/survey-data';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc, Timestamp, updateDoc } from 'firebase/firestore';
@@ -10,17 +11,18 @@ import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format, differenceInYears, parse } from 'date-fns';
 
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
+// Temporarily disable Genkit AI
+// import { genkit } from 'genkit';
+// import { googleAI } from '@genkit-ai/googleai';
 
-function initializeGenkit() {
-    return genkit({
-        plugins: [
-            googleAI({ apiKey: process.env.GEMINI_API_KEY }),
-        ],
-        model: 'googleai/gemini-2.0-flash',
-    });
-}
+// function initializeGenkit() {
+//     return genkit({
+//         plugins: [
+//             googleAI({ apiKey: process.env.GEMINI_API_KEY }),
+//         ],
+//         model: 'googleai/gemini-2.0-flash',
+//     });
+// }
 
 
 async function getNextPatientSequence(idPrefix: string): Promise<string> {
@@ -235,20 +237,16 @@ export async function saveSurvey(formData: Record<string, any>, existingExamId?:
 
 export async function submitSurveyForTips(formData: Record<string, any>) {
   try {
-    const ai = initializeGenkit();
-    const surveyResponses = processFormData(formData);
-
-    if (Object.keys(surveyResponses).length === 0) {
-      return { error: 'No responses provided.' };
-    }
-
-    const result = await generatePersonalizedTips(ai, { surveyResponses });
-
-    if (!result || !result.tips || result.tips.length === 0) {
-      return { error: 'Could not generate personalized tips at this time.' };
-    }
-    
-    return { tips: result.tips };
+    // Temporarily disabled AI functionality for deployment
+    return { 
+      tips: [
+        "Sikat gigi 2 kali sehari dengan pasta gigi berfluoride",
+        "Gunakan benang gigi untuk membersihkan sela-sela gigi", 
+        "Kumur dengan mouthwash antibakteri",
+        "Batasi konsumsi makanan dan minuman manis",
+        "Rutin periksa ke dokter gigi setiap 6 bulan"
+      ]
+    };
 
   } catch (error) {
     console.error("Error submitting survey for tips:", error);
@@ -409,7 +407,7 @@ export async function getDashboardAnalysis(filters: {
   dateRange?: { from?: Date; to?: Date };
 }) {
   try {
-    const ai = initializeGenkit();
+    // Temporarily disabled AI functionality for deployment
     let patientQuery: any = collection(db, 'patients');
     
     const queryConstraints = [];
@@ -437,16 +435,16 @@ export async function getDashboardAnalysis(filters: {
         return { analysis: null };
     }
 
-    // Process patient data to include calculated scores before analysis
+    // Process patient data to include calculated scores
     const patientList = patientSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         ...data,
-        ...processFormData(data)
+        ...processFormData(data as Record<string, any>)
       };
-    }) as DentalAnalysisInput['patients'];
+    });
     
-     // Calculate summary tables
+    // Calculate summary tables
     const summaryTables = {
         education: { 'SD': 0, 'SMP': 0, 'SMA': 0, 'Diploma 1/2/3': 0, 'D4/S1': 0, 'S2': 0, 'S3': 0, 'Tidak sekolah': 0, 'Jumlah': 0 },
         occupation: { 'ASN/PNS/PPPK': 0, 'TNI/POLRI': 0, 'PEGAWAI BUMN': 0, 'PEGAWAI SWASTA': 0, 'WIRASWASTA/WIRAUSAHA': 0, 'PELAJAR/MAHASISWA': 0, 'PENGURUS/IBU RUMAH TANGGA': 0, 'ASISTEN RUMAH TANGGA': 0, 'TIDAK BEKERJA': 0, 'Jumlah': 0 },
@@ -457,7 +455,7 @@ export async function getDashboardAnalysis(filters: {
     const educationMap: Record<string, keyof typeof summaryTables.education> = {
         'SD': 'SD', 'SMP': 'SMP', 'SMA': 'SMA', 'Diploma': 'Diploma 1/2/3', 'Sarjana': 'D4/S1', 'S2': 'S2', 'S3': 'S3', 'Lainnya': 'Tidak sekolah'
     };
-     const occupationMap: Record<string, keyof typeof summaryTables.occupation> = {
+    const occupationMap: Record<string, keyof typeof summaryTables.occupation> = {
         'Pegawai Negeri': 'ASN/PNS/PPPK',
         'Pegawai Swasta': 'PEGAWAI SWASTA',
         'Wiraswasta': 'WIRASWASTA/WIRAUSAHA',
@@ -466,8 +464,7 @@ export async function getDashboardAnalysis(filters: {
         'Tidak Bekerja': 'TIDAK BEKERJA',
     };
 
-
-    patientList.forEach(p => {
+    patientList.forEach((p: any) => {
         // Education
         const eduKey = p['patient-category'] === 'Siswa sekolah dasar (SD)' ? p.parentEducation : p.education;
         const mappedEduKey = eduKey ? educationMap[eduKey] || 'Tidak sekolah' : 'Tidak sekolah';
@@ -501,14 +498,20 @@ export async function getDashboardAnalysis(filters: {
         }
     });
 
+    // Return basic analysis without AI
+    const totalPatients = patientList.length;
+    const analysis = {
+      summary: `Analisis data ${totalPatients} pasien menunjukkan distribusi demografi yang beragam. Dashboard statistik memberikan overview kondisi kesehatan gigi masyarakat berdasarkan data yang dikumpulkan.`,
+      recommendations: [
+        "Tingkatkan program edukasi kesehatan gigi",
+        "Perluas akses pelayanan kesehatan gigi",
+        "Fokus pada pencegahan penyakit gigi dan mulut",
+        "Lakukan monitoring rutin kondisi kesehatan gigi"
+      ],
+      summaryTables
+    };
 
-    const result = await analyzeDentalData(ai, { patients: patientList, language: filters.language, summaryTables });
-
-    if (!result) {
-        return { error: 'Gagal menganalisis data. AI tidak memberikan respons.' };
-    }
-
-    return { analysis: result };
+    return { analysis };
 
   } catch (error: any) {
     console.error("Error getting dashboard analysis:", error);
