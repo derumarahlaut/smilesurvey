@@ -3,7 +3,7 @@
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
   DB_HOST = "31.97.48.178"
   DB_PORT = "3306"
   DB_USER = "sql_skg_polkesba"
