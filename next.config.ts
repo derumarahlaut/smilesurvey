@@ -19,22 +19,24 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  
   webpack: (config, { isServer }) => {
-    // Ignore missing optional dependencies
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-    };
+    // Minimal webpack config to avoid infinite loops
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+      };
+    }
 
-    // Ignore warnings about missing optional dependencies
-    config.ignoreWarnings = [
-      /Module not found: Can't resolve '@opentelemetry\/exporter-jaeger'/,
-      /Module not found: Can't resolve '@genkit-ai\/firebase'/,
-      /Critical dependency: the request of a dependency is an expression/,
-      /require.extensions is not supported by webpack/,
-    ];
+    // Remove complex optimizations that might cause loops
+    config.optimization = {
+      ...config.optimization,
+      sideEffects: false,
+      usedExports: true,
+    };
 
     return config;
   },

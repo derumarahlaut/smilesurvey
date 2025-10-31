@@ -2,7 +2,7 @@
 export type Question = {
   id: string;
   question: string;
-  type: 'text' | 'number' | 'radio' | 'select' | 'date' | 'custom' | 'datetime';
+  type: 'text' | 'number' | 'radio' | 'select' | 'date' | 'custom' | 'datetime' | 'textarea';
   options?: string[];
   placeholder?: string;
 };
