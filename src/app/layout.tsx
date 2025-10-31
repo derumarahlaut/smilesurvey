@@ -1,8 +1,6 @@
 import type {Metadata} from 'next';
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from '@/contexts/auth-context';
-import { AppHeader } from '@/components/app-header';
+import { AuthProvider } from '../contexts/auth-context';
 
 export const metadata: Metadata = {
   title: 'SmileSurvey - Your Dental Health Partner',
@@ -24,12 +22,10 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <AppHeader />
           <main className="min-h-screen">
             {children}
           </main>
         </AuthProvider>
-        <Toaster />
       </body>
     </html>
   );

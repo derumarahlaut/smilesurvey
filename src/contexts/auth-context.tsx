@@ -4,14 +4,14 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
   id: string;
-  username: string;
+  email: string;
   role: 'admin' | 'operator';
   name: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAdmin: () => boolean;
   isOperator: () => boolean;
@@ -24,43 +24,43 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const DEFAULT_ACCOUNTS = [
   {
     id: 'admin',
-    username: 'admin',
-    password: 'Admin@123',
+    email: 'admin@smilesurvey.com',
+    password: 'admin123',
     role: 'admin' as const,
     name: 'Administrator'
   },
   {
     id: 'pencatat1',
-    username: 'pencatat1',
-    password: 'Pencatat@1',
+    email: 'pencatat1@smilesurvey.com',
+    password: 'pencatat123',
     role: 'operator' as const,
     name: 'Pencatat 1'
   },
   {
     id: 'pencatat2',
-    username: 'pencatat2',
-    password: 'Pencatat@2',
+    email: 'pencatat2@smilesurvey.com',
+    password: 'pencatat123',
     role: 'operator' as const,
     name: 'Pencatat 2'
   },
   {
     id: 'pencatat3',
-    username: 'pencatat3',
-    password: 'Pencatat@3',
+    email: 'pencatat3@smilesurvey.com',
+    password: 'pencatat123',
     role: 'operator' as const,
     name: 'Pencatat 3'
   },
   {
     id: 'pencatat4',
-    username: 'pencatat4',
-    password: 'Pencatat@4',
+    email: 'pencatat4@smilesurvey.com',
+    password: 'pencatat123',
     role: 'operator' as const,
     name: 'Pencatat 4'
   },
   {
     id: 'pencatat5',
-    username: 'pencatat5',
-    password: 'Pencatat@5',
+    email: 'pencatat5@smilesurvey.com',
+    password: 'pencatat123',
     role: 'operator' as const,
     name: 'Pencatat 5'
   }
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     // Get custom accounts from localStorage
     const customAccounts = localStorage.getItem('smilesurvey_accounts');
     let allAccounts = [...DEFAULT_ACCOUNTS];
@@ -98,13 +98,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const account = allAccounts.find(acc => 
-      acc.username === username && acc.password === password
+      acc.email === email && acc.password === password
     );
 
     if (account) {
       const userInfo: User = {
         id: account.id,
-        username: account.username,
+        email: account.email,
         role: account.role,
         name: account.name
       };
