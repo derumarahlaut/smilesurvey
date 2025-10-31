@@ -25,6 +25,24 @@ export type Patient = {
     parentEducation?: string;
     verifierName?: string;
     verifiedAt?: any; // Can be Firestore Timestamp
+    age?: number;
+    dmftTotal?: number;
+    deftTotal?: number;
+    dentalData?: {
+        dmftTotal: number;
+        deftTotal: number;
+        dmftComponents: { D: number; M: number; F: number };
+        deftComponents: { d: number; e: number; f: number };
+        toothStatus: Record<string, string>;
+        clinicalChecks: {
+            bleedingGums: boolean;
+            oralLesion: boolean;
+            treatmentNeed?: string;
+            referral: boolean;
+            referralType?: string;
+            referralLocation?: string;
+        };
+    };
 }
 
 // Re-exporting location data from here to be used in patient-table

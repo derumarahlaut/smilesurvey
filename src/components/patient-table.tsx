@@ -96,6 +96,12 @@ const ActionCell = ({ row }: { row: any }) => {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Aksi</DropdownMenuLabel>
           <DropdownMenuItem>
+            <Link href={`/patient/${patient.examId}`} className="flex items-center w-full">
+                <FileText className="mr-2 h-4 w-4" />
+                Lihat Detail & Tips
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
             <Link href={`/master/${patient.examId}`} className="flex items-center w-full">
                 <FileText className="mr-2 h-4 w-4" />
                 Lihat Data

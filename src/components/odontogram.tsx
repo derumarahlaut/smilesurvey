@@ -63,7 +63,7 @@ const ToothSelect = ({ control, name, label, type = 'permanent' }: { control: an
       control={control}
       render={({ field }) => (
         <Select onValueChange={field.onChange} value={field.value}>
-          <SelectTrigger className="w-[60px] h-8 bg-yellow-200 border-gray-400">
+          <SelectTrigger className="w-[50px] h-8 bg-yellow-200 border-gray-400 [&>svg]:hidden">
             <SelectValue placeholder="-" />
           </SelectTrigger>
           <SelectContent>
@@ -82,7 +82,7 @@ const ToothRow = ({ control, teethRight, teethLeft, type = 'permanent' } : { con
         <div className="flex justify-end flex-1 gap-1">
             {teethRight.map(tooth => <ToothSelect key={tooth} control={control} name={`tooth-${tooth}`} label={String(tooth)} type={type} />)}
         </div>
-        <div className="w-px h-12 bg-black mx-1"></div>
+        <div className="w-0.5 h-12 bg-gray-800 mx-2 rounded-full"></div>
         <div className="flex justify-start flex-1 gap-1">
             {teethLeft.map(tooth => <ToothSelect key={tooth} control={control} name={`tooth-${tooth}`} label={String(tooth)} type={type} />)}
         </div>
@@ -173,27 +173,39 @@ export function Odontogram({ form }: { form: any }) {
 
       <div className="flex justify-center gap-8 items-start">
         {/* Odontogram Chart */}
-        <div className="space-y-2 flex-grow">
-          <div className="flex justify-between text-sm font-bold px-4">
-            <span>RA Kanan</span>
-            <span>RA Kiri</span>
+        <div className="space-y-2 flex-grow overflow-x-auto overflow-y-hidden scrollbar-thin touch-scroll relative px-4">
+          {/* Scroll indicator for mobile */}
+          <div className="absolute top-2 right-6 z-10 lg:hidden bg-blue-600 text-white text-xs px-3 py-1 rounded-full opacity-80 animate-pulse">
+            👆 Geser Chart
           </div>
-          <ToothRow control={control} teethRight={adultTeeth.upperRight} teethLeft={adultTeeth.upperLeft} type="permanent" />
-          <ToothRow control={control} teethRight={childTeeth.upperRight.slice().reverse()} teethLeft={childTeeth.upperLeft} type="primary" />
-          <div className="border-t-2 border-black my-2"></div>
-          <ToothRow control={control} teethRight={childTeeth.lowerRight.slice().reverse()} teethLeft={childTeeth.lowerLeft} type="primary" />
-          <ToothRow control={control} teethRight={adultTeeth.lowerRight.slice().reverse()} teethLeft={adultTeeth.lowerLeft} type="permanent" />
-          <div className="flex justify-between text-sm font-bold px-4">
-            <span>RB Kanan</span>
-            <span>RB Kiri</span>
+          <div className="min-w-[950px]">
+            <div className="flex justify-between text-sm font-bold px-4">
+              <span>RA Kanan</span>
+              <span>RA Kiri</span>
+            </div>
+            <ToothRow control={control} teethRight={adultTeeth.upperRight} teethLeft={adultTeeth.upperLeft} type="permanent" />
+            <ToothRow control={control} teethRight={childTeeth.upperRight.slice().reverse()} teethLeft={childTeeth.upperLeft} type="primary" />
+            <div className="border-t-2 border-black my-2"></div>
+            <ToothRow control={control} teethRight={childTeeth.lowerRight.slice().reverse()} teethLeft={childTeeth.lowerLeft} type="primary" />
+            <ToothRow control={control} teethRight={adultTeeth.lowerRight.slice().reverse()} teethLeft={adultTeeth.lowerLeft} type="permanent" />
+            <div className="flex justify-between text-sm font-bold px-4">
+              <span>RB Kanan</span>
+              <span>RB Kiri</span>
+            </div>
           </div>
         </div>
       </div>
       
       {/* Score Tables */}
-      <div className="flex justify-center gap-8 items-start py-4 border-t">
-        <ScoreTable title="def-t" scores={scores.defScores} />
-        <ScoreTable title="DMF-T" scores={scores.dmfScores} />
+      <div className="overflow-x-auto overflow-y-hidden pt-4 border-t scrollbar-thin touch-scroll relative">
+        {/* Scroll indicator for mobile */}
+        <div className="absolute top-6 right-2 z-10 lg:hidden bg-green-600 text-white text-xs px-3 py-1 rounded-full opacity-80">
+          👆 Geser Tabel
+        </div>
+        <div className="flex justify-center gap-8 items-start min-w-[400px]">
+          <ScoreTable title="def-t" scores={scores.defScores} />
+          <ScoreTable title="DMF-T" scores={scores.dmfScores} />
+        </div>
       </div>
 
 

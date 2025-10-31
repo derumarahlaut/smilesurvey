@@ -4,12 +4,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { List, Home, FileText, BarChart, Users, MapPin, Activity, Lightbulb, AlertTriangle, Loader2, Calendar as CalendarIcon, Filter, X } from 'lucide-react';
+import { FileText, BarChart, Users, MapPin, Activity, Lightbulb, AlertTriangle, Loader2, Calendar as CalendarIcon, Filter, X } from 'lucide-react';
 import { getDashboardAnalysis } from '@/app/actions';
 // Temporarily disable AI types for deployment
 // import type { DentalAnalysisOutput } from '@/ai/flows/analyze-dental-data';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { ProtectedRoute } from '@/components/protected-route';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -94,31 +94,19 @@ export default function DashboardPage() {
   const isFilterActive = provinceFilter || cityFilter || dateRange;
 
   return (
-    <main className="container mx-auto flex min-h-screen flex-col items-start justify-start p-4 md:p-8">
-      <div className="w-full max-w-7xl space-y-8">
-        <Card className="shadow-xl w-full">
-          <CardHeader>
-            <div className="flex flex-wrap items-start justify-between gap-4">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50">
+        <main className="container mx-auto flex min-h-screen flex-col items-start justify-start p-4 md:p-8">
+          <div className="w-full max-w-7xl space-y-8">
+            <Card className="shadow-xl w-full">
+              <CardHeader className="text-center">
                 <div>
                   <CardTitle className="font-headline text-4xl">Dashboard Analisis Data</CardTitle>
                   <CardDescription>Ringkasan dan analisis komprehensif dari data pemeriksaan gigi.</CardDescription>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                    <Link href="/" passHref>
-                       <Button variant="outline">
-                          <Home className="mr-2 h-4 w-4" />
-                          Form Input
-                       </Button>
-                    </Link>
-                    <Link href="/master" passHref>
-                       <Button variant="outline">
-                          <List className="mr-2 h-4 w-4" />
-                          Tabel Master
-                       </Button>
-                    </Link>
-                </div>
-            </div>
-            <div className="border-t pt-4 mt-4 space-y-4">
+              </CardHeader>
+              <CardContent>
+                <div className="border-t pt-4 mt-4 space-y-4">
                  <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-2">
                         <Filter className="h-4 w-4 text-muted-foreground" />
@@ -187,8 +175,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
-          </CardHeader>
-          <CardContent>
             {loading ? (
               <div className="flex flex-col items-center justify-center text-center py-16">
                   <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -212,6 +198,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent className="space-y-8">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <DemographicChart title="Kategori Pasien" data={analysis.summaryTables.patientCategory} />
                             <DemographicChart title="Pendidikan" data={analysis.summaryTables.education} />
                             <DemographicChart title="Pekerjaan" data={analysis.summaryTables.occupation} />
                             <DemographicChart title="Jenis Kelamin" data={analysis.summaryTables.gender} />
@@ -233,11 +220,10 @@ export default function DashboardPage() {
                 </Card>
                 
                 {/* Statistik Utama */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <StatCard title={language === 'english' ? 'Total Patients' : 'Total Pasien'} value={analysis.keyStatistics.totalPatients} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
                   <StatCard title={language === 'english' ? 'Average DMF-T' : 'Rata-rata DMF-T'} value={analysis.keyStatistics.averageDmft.toFixed(2)} icon={<BarChart className="h-4 w-4 text-muted-foreground" />} />
                   <StatCard title={language === 'english' ? 'Average def-t' : 'Rata-rata def-t'} value={analysis.keyStatistics.averageDeft.toFixed(2)} icon={<BarChart className="h-4 w-4 text-muted-foreground" />} />
-                  <StatCard title={language === 'english' ? 'Top Province' : 'Provinsi Teratas'} value={analysis.keyStatistics.topProvince} icon={<MapPin className="h-4 w-4 text-muted-foreground" />} />
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -248,7 +234,7 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
-                                {analysis.keyFindings.map((finding, index) => (
+                                {analysis.keyFindings.map((finding: string, index: number) => (
                                     <li key={index}>{finding}</li>
                                 ))}
                             </ul>
@@ -262,7 +248,7 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent>
                            <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
-                                {analysis.recommendations.map((rec, index) => (
+                                {analysis.recommendations.map((rec: string, index: number) => (
                                     <li key={index}>{rec}</li>
                                 ))}
                             </ul>
@@ -281,5 +267,7 @@ export default function DashboardPage() {
         </Card>
       </div>
     </main>
+      </div>
+    </ProtectedRoute>
   );
 }

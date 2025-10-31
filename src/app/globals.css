@@ -86,3 +86,67 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom scrollbar for touch devices */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Enhanced touch scrolling */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* Enable momentum scrolling on iOS */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Mobile and tablet specific optimizations */
+@media (max-width: 768px) {
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 12px; /* Larger for easier touch interaction */
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 6px;
+    min-width: 40px; /* Minimum touch target size */
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #e5e7eb;
+  }
+}
+
+/* Tablet specific (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 10px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    min-width: 50px;
+  }
+}

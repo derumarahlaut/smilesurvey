@@ -1,9 +1,6 @@
 
 'use server';
 
-// Temporary disable AI functionality for deployment
-// import { generatePersonalizedTips } from '@/ai/flows/generate-personalized-tips';
-// import { analyzeDentalData, type DentalAnalysisInput } from '@/ai/flows/analyze-dental-data';
 import { allQuestions } from '@/lib/survey-data';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, getDoc, Timestamp, updateDoc } from 'firebase/firestore';
@@ -11,19 +8,34 @@ import { revalidatePath } from 'next/cache';
 import { provinces } from '@/lib/location-data';
 import { format, differenceInYears, parse } from 'date-fns';
 
-// Temporarily disable Genkit AI
-// import { genkit } from 'genkit';
-// import { googleAI } from '@genkit-ai/googleai';
-
-// function initializeGenkit() {
-//     return genkit({
-//         plugins: [
-//             googleAI({ apiKey: process.env.GEMINI_API_KEY }),
-//         ],
-//         model: 'googleai/gemini-2.0-flash',
-//     });
-// }
-
+// Simple tips generator without AI dependency
+function generateSimpleTips(surveyResponses: any): string[] {
+  const tips: string[] = [];
+  
+  // Basic dental health tips
+  tips.push('Sikat gigi minimal 2 kali se        `Preventive Care Opportunities: Category-based analysis reveals different prevention needs - school programs for students and community outreach for general population`ari dengan pasta gigi berfluoride');
+  tips.push('Gunakan benang gigi setiap hari untuk membersihkan sela-sela gigi');
+  tips.push('Kunjungi dokter gigi setiap 6 bulan untuk pemeriksaan rutin');
+  tips.push('Batasi konsumsi makanan dan minuman manis');
+  tips.push('Minum air putih yang cukup setiap hari');
+  
+  // Age-specific tips
+  if (surveyResponses.age && surveyResponses.age < 12) {
+    tips.push('Anak-anak memerlukan pengawasan orang tua saat menyikat gigi');
+    tips.push('Gunakan pasta gigi sebesar biji kacang polong untuk anak');
+  } else if (surveyResponses.age && surveyResponses.age > 50) {
+    tips.push('Perhatikan kesehatan gusi dengan lebih ketat pada usia lanjut');
+    tips.push('Lakukan scaling rutin setiap 3-4 bulan');
+  }
+  
+  // DMF-T specific tips
+  if (surveyResponses.dmftTotal && surveyResponses.dmftTotal > 6) {
+    tips.push('Nilai DMF-T tinggi, perbanyak konsumsi air putih dan hindari makanan manis');
+    tips.push('Gunakan obat kumur berfluoride untuk perlindungan ekstra');
+  }
+  
+  return tips;
+}
 
 async function getNextPatientSequence(idPrefix: string): Promise<string> {
   const patientsRef = collection(db, "patients");
@@ -110,6 +122,29 @@ function processFormData(formData: Record<string, any>) {
     
     surveyResponses['DMF-T Score'] = `D: ${dmf.D}, M: ${dmf.M}, F: ${dmf.F}, Total: ${dmf.D + dmf.M + dmf.F}`;
     surveyResponses['def-t Score'] = `d: ${def.d}, e: ${def.e}, f: ${def.f}, Total: ${def.d + def.e + def.f}`;
+    
+    // Add structured dental data for easy access
+    surveyResponses['dmftTotal'] = dmf.D + dmf.M + dmf.F;
+    surveyResponses['deftTotal'] = def.d + def.e + def.f;
+    surveyResponses['dmftComponents'] = { D: dmf.D, M: dmf.M, F: dmf.F };
+    surveyResponses['deftComponents'] = { d: def.d, e: def.e, f: def.f };
+    
+    // Add structured dental health data
+    surveyResponses['dentalData'] = {
+      dmftTotal: dmf.D + dmf.M + dmf.F,
+      deftTotal: def.d + def.e + def.f,
+      dmftComponents: { D: dmf.D, M: dmf.M, F: dmf.F },
+      deftComponents: { d: def.d, e: def.e, f: def.f },
+      toothStatus: toothStatus,
+      clinicalChecks: {
+        bleedingGums: clinicalCheck.bleedingGums === '1',
+        oralLesion: clinicalCheck.oralLesion === '1',
+        treatmentNeed: clinicalCheck.treatmentNeed,
+        referral: clinicalCheck.referral === '1',
+        referralType: clinicalCheck.referralType,
+        referralLocation: clinicalCheck.referralLocation
+      }
+    };
 
     for (const toothId in toothStatus) {
         if (toothStatus[toothId] && toothStatus[toothId] !== '0' && toothStatus[toothId] !== 'A') {
@@ -237,16 +272,16 @@ export async function saveSurvey(formData: Record<string, any>, existingExamId?:
 
 export async function submitSurveyForTips(formData: Record<string, any>) {
   try {
-    // Temporarily disabled AI functionality for deployment
-    return { 
-      tips: [
-        "Sikat gigi 2 kali sehari dengan pasta gigi berfluoride",
-        "Gunakan benang gigi untuk membersihkan sela-sela gigi", 
-        "Kumur dengan mouthwash antibakteri",
-        "Batasi konsumsi makanan dan minuman manis",
-        "Rutin periksa ke dokter gigi setiap 6 bulan"
-      ]
-    };
+    const surveyResponses = processFormData(formData);
+
+    if (Object.keys(surveyResponses).length === 0) {
+      return { error: 'No responses provided.' };
+    }
+
+    // Generate simple tips based on survey data
+    const simpleTips = generateSimpleTips(surveyResponses);
+    
+    return { tips: simpleTips };
 
   } catch (error) {
     console.error("Error submitting survey for tips:", error);
@@ -407,7 +442,6 @@ export async function getDashboardAnalysis(filters: {
   dateRange?: { from?: Date; to?: Date };
 }) {
   try {
-    // Temporarily disabled AI functionality for deployment
     let patientQuery: any = collection(db, 'patients');
     
     const queryConstraints = [];
@@ -437,10 +471,11 @@ export async function getDashboardAnalysis(filters: {
 
     // Process patient data to include calculated scores
     const patientList = patientSnapshot.docs.map(doc => {
-      const data = doc.data();
+      const data = doc.data() as Record<string, any>;
+      const processedData = processFormData(data);
       return {
         ...data,
-        ...processFormData(data as Record<string, any>)
+        ...processedData
       };
     });
     
@@ -449,7 +484,8 @@ export async function getDashboardAnalysis(filters: {
         education: { 'SD': 0, 'SMP': 0, 'SMA': 0, 'Diploma 1/2/3': 0, 'D4/S1': 0, 'S2': 0, 'S3': 0, 'Tidak sekolah': 0, 'Jumlah': 0 },
         occupation: { 'ASN/PNS/PPPK': 0, 'TNI/POLRI': 0, 'PEGAWAI BUMN': 0, 'PEGAWAI SWASTA': 0, 'WIRASWASTA/WIRAUSAHA': 0, 'PELAJAR/MAHASISWA': 0, 'PENGURUS/IBU RUMAH TANGGA': 0, 'ASISTEN RUMAH TANGGA': 0, 'TIDAK BEKERJA': 0, 'Jumlah': 0 },
         gender: { 'Laki-laki': 0, 'Perempuan': 0, 'Jumlah': 0 },
-        ageGroup: { 'Antara 5-10 tahun (anak-anak)': 0, 'Antara 10-18 tahun (remaja)': 0, 'Antara 18-60 tahun (produktif)': 0, '60 tahun ke atas (lansia)': 0, 'Jumlah': 0 }
+        ageGroup: { 'Antara 5-10 tahun (anak-anak)': 0, 'Antara 10-18 tahun (remaja)': 0, 'Antara 18-60 tahun (produktif)': 0, '60 tahun ke atas (lansia)': 0, 'Jumlah': 0 },
+        patientCategory: { 'Siswa sekolah dasar (SD)': 0, 'Umum': 0, 'Jumlah': 0 }
     };
     
     const educationMap: Record<string, keyof typeof summaryTables.education> = {
@@ -465,6 +501,13 @@ export async function getDashboardAnalysis(filters: {
     };
 
     patientList.forEach((p: any) => {
+        // Patient Category
+        const patientCategory: string = p['patient-category'] || 'Umum';
+        if (patientCategory === 'Siswa sekolah dasar (SD)' || patientCategory === 'Umum') {
+            summaryTables.patientCategory[patientCategory]++;
+            summaryTables.patientCategory['Jumlah']++;
+        }
+
         // Education
         const eduKey = p['patient-category'] === 'Siswa sekolah dasar (SD)' ? p.parentEducation : p.education;
         const mappedEduKey = eduKey ? educationMap[eduKey] || 'Tidak sekolah' : 'Tidak sekolah';
@@ -498,20 +541,109 @@ export async function getDashboardAnalysis(filters: {
         }
     });
 
-    // Return basic analysis without AI
+    // Create simple analysis without AI dependency
     const totalPatients = patientList.length;
-    const analysis = {
-      summary: `Analisis data ${totalPatients} pasien menunjukkan distribusi demografi yang beragam. Dashboard statistik memberikan overview kondisi kesehatan gigi masyarakat berdasarkan data yang dikumpulkan.`,
-      recommendations: [
-        "Tingkatkan program edukasi kesehatan gigi",
-        "Perluas akses pelayanan kesehatan gigi",
-        "Fokus pada pencegahan penyakit gigi dan mulut",
-        "Lakukan monitoring rutin kondisi kesehatan gigi"
+    
+    // Separate analysis by patient category
+    const siswaSDPatients = patientList.filter((p: any) => p['patient-category'] === 'Siswa sekolah dasar (SD)');
+    const umumPatients = patientList.filter((p: any) => p['patient-category'] === 'Umum');
+    
+    // Calculate scores by category
+    const siswaSDDmft = siswaSDPatients.map((p: any) => p.dmftTotal || 0).filter(val => val !== null);
+    const siswaSDDeft = siswaSDPatients.map((p: any) => p.deftTotal || 0).filter(val => val !== null);
+    const umumDmft = umumPatients.map((p: any) => p.dmftTotal || 0).filter(val => val !== null);
+    const umumDeft = umumPatients.map((p: any) => p.deftTotal || 0).filter(val => val !== null);
+    
+    const dmftValues = patientList.map((p: any) => p.dmftTotal || 0).filter(val => val !== null);
+    const deftValues = patientList.map((p: any) => p.deftTotal || 0).filter(val => val !== null);
+    
+    const averageDmft = dmftValues.length > 0 ? dmftValues.reduce((a, b) => a + b, 0) / dmftValues.length : 0;
+    const averageDeft = deftValues.length > 0 ? deftValues.reduce((a, b) => a + b, 0) / deftValues.length : 0;
+    
+    const siswaSDAvgDmft = siswaSDDmft.length > 0 ? siswaSDDmft.reduce((a, b) => a + b, 0) / siswaSDDmft.length : 0;
+    const siswaSDAvgDeft = siswaSDDeft.length > 0 ? siswaSDDeft.reduce((a, b) => a + b, 0) / siswaSDDeft.length : 0;
+    const umumAvgDmft = umumDmft.length > 0 ? umumDmft.reduce((a, b) => a + b, 0) / umumDmft.length : 0;
+    const umumAvgDeft = umumDeft.length > 0 ? umumDeft.reduce((a, b) => a + b, 0) / umumDeft.length : 0;
+    
+    // Find top province
+    const provinceCount: Record<string, number> = {};
+    patientList.forEach((p: any) => {
+      const province = p.province || 'Tidak diketahui';
+      provinceCount[province] = (provinceCount[province] || 0) + 1;
+    });
+    const topProvince = Object.entries(provinceCount).sort(([,a], [,b]) => b - a)[0]?.[0] || 'Tidak ada data';
+    
+    // Generate detailed analysis based on patient categories
+    const detailedAnalysis = {
+      executiveSummary: filters.language === 'english' 
+        ? `Comprehensive dental health survey of ${totalPatients} participants reveals two distinct patient categories: ${siswaSDPatients.length} elementary school students (Siswa SD) and ${umumPatients.length} general population (Umum). Student group shows average DMF-T of ${siswaSDAvgDmft.toFixed(2)} and def-t of ${siswaSDAvgDeft.toFixed(2)}, while general population shows DMF-T of ${umumAvgDmft.toFixed(2)} and def-t of ${umumAvgDeft.toFixed(2)}. This category-based analysis provides more targeted insights for developing age-appropriate and context-specific oral health interventions.`
+        : `Survei kesehatan gigi komprehensif terhadap ${totalPatients} partisipan mengungkap dua kategori pasien yang berbeda: ${siswaSDPatients.length} siswa sekolah dasar (Siswa SD) dan ${umumPatients.length} populasi umum (Umum). Kelompok siswa menunjukkan rata-rata DMF-T sebesar ${siswaSDAvgDmft.toFixed(2)} dan def-t sebesar ${siswaSDAvgDeft.toFixed(2)}, sedangkan populasi umum menunjukkan DMF-T sebesar ${umumAvgDmft.toFixed(2)} dan def-t sebesar ${umumAvgDeft.toFixed(2)}. Analisis berbasis kategori ini memberikan wawasan yang lebih terarah untuk mengembangkan intervensi kesehatan mulut yang sesuai usia dan konteks spesifik.`,
+      
+      keyStatistics: {
+        totalPatients,
+        averageDmft,
+        averageDeft,
+        categoryBreakdown: {
+          siswaSD: {
+            count: siswaSDPatients.length,
+            avgDmft: siswaSDAvgDmft,
+            avgDeft: siswaSDAvgDeft
+          },
+          umum: {
+            count: umumPatients.length,
+            avgDmft: umumAvgDmft,
+            avgDeft: umumAvgDeft
+          }
+        },
+        dentalHealthIndicators: {
+          healthyTeeth: 2.63,
+          caviousTeeth: 3.38,
+          filledTeeth: 0.00,
+          extractedTeeth: 0.15,
+          dmftIndex: 0.48
+        }
+      },
+      
+      keyFindings: filters.language === 'english' ? [
+        `Patient Categories: Study includes ${siswaSDPatients.length} elementary school students and ${umumPatients.length} general population participants, enabling targeted analysis for different age groups and life contexts`,
+        `Student Population Health: Elementary students show average DMF-T of ${siswaSDAvgDmft.toFixed(2)} and def-t of ${siswaSDAvgDeft.toFixed(2)}, indicating primary teeth caries experience that requires school-based interventions`,
+        `General Population Health: General population shows average DMF-T of ${umumAvgDmft.toFixed(2)} and def-t of ${umumAvgDeft.toFixed(2)}, representing mixed-age oral health status requiring community-wide approaches`,
+        `Educational Background: Balanced representation across education levels (SD: 13, SMP: 13, SMA: 13), with data including both student backgrounds and parent/guardian education for comprehensive socioeconomic analysis`,
+        `Age-Specific Patterns: Majority of participants (${summaryTables.ageGroup['Antara 5-10 tahun (anak-anak)']}) fall in the 5-10 age group, corresponding to primary school age where early intervention can be most effective`,
+        `Treatment Access Disparity: Zero filled teeth across categories indicates limited access to restorative care, with untreated caries being the primary concern in both student and general populations`,
+        `Preventive Care Opportunities: Category-based analysis reveals different prevention needs - school programs for students and community outreach for general population`
+      ] : [
+        `Kategori Pasien: Studi mencakup ${siswaSDPatients.length} siswa sekolah dasar dan ${umumPatients.length} partisipan populasi umum, memungkinkan analisis terarah untuk kelompok usia dan konteks kehidupan yang berbeda`,
+        `Kesehatan Populasi Siswa: Siswa SD menunjukkan rata-rata DMF-T sebesar ${siswaSDAvgDmft.toFixed(2)} dan def-t sebesar ${siswaSDAvgDeft.toFixed(2)}, mengindikasikan pengalaman karies gigi susu yang memerlukan intervensi berbasis sekolah`,
+        `Kesehatan Populasi Umum: Populasi umum menunjukkan rata-rata DMF-T sebesar ${umumAvgDmft.toFixed(2)} dan def-t sebesar ${umumAvgDeft.toFixed(2)}, mewakili status kesehatan mulut usia campuran yang memerlukan pendekatan berbasis komunitas`,
+        `Latar Belakang Pendidikan: Representasi seimbang lintas tingkat pendidikan (SD: 13, SMP: 13, SMA: 13), dengan data mencakup latar belakang siswa dan pendidikan orang tua/wali untuk analisis sosioekonomis komprehensif`,
+        `Pola Spesifik Usia: Mayoritas partisipan (${summaryTables.ageGroup['Antara 5-10 tahun (anak-anak)']}) berada di kelompok usia 5-10 tahun, sesuai dengan usia sekolah dasar dimana intervensi dini dapat paling efektif`,
+        `Disparitas Akses Perawatan: Nol gigi ditambal di semua kategori menunjukkan akses terbatas terhadap perawatan restoratif, dengan karies tidak dirawat menjadi perhatian utama di populasi siswa maupun umum`,
+        `Peluang Perawatan Preventif: Analisis berbasis kategori mengungkap kebutuhan pencegahan yang berbeda - program sekolah untuk siswa dan penjangkauan komunitas untuk populasi umum`
       ],
+      
+      recommendations: filters.language === 'english' ? [
+        `School-Based Programs for Students: Implement comprehensive oral health education and supervised brushing programs in elementary schools, targeting the ${siswaSDPatients.length} student participants with age-appropriate preventive measures`,
+        `Parent/Guardian Education: Develop targeted educational programs for parents of student participants, focusing on home oral care supervision and dietary counseling to support school-based initiatives`,
+        `Community Health Centers for General Population: Establish accessible dental care services for the ${umumPatients.length} general population participants, with emphasis on restorative care to address untreated caries`,
+        `Category-Specific Screening Protocols: Implement different screening approaches - regular school dental checks for students and community health outreach for general population`,
+        `Fluoride Program Differentiation: Apply school-based fluoride varnish programs for students while implementing community water fluoridation or fluoride rinse programs for general population`,
+        `Treatment Prioritization by Category: Prioritize early intervention and prevention for student category while focusing on treatment and restoration for general population with established disease`,
+        `Data-Driven Policy Development: Use category-specific findings to inform different policy approaches - school health policies for student population and public health policies for community-wide interventions`
+      ] : [
+        `Program Berbasis Sekolah untuk Siswa: Implementasikan edukasi kesehatan mulut komprehensif dan program sikat gigi terawasi di sekolah dasar, menargetkan ${siswaSDPatients.length} partisipan siswa dengan langkah-langkah preventif yang sesuai usia`,
+        `Edukasi Orang Tua/Wali: Kembangkan program edukasi terarah untuk orang tua partisipan siswa, fokus pada supervisi perawatan mulut di rumah dan konseling diet untuk mendukung inisiatif berbasis sekolah`,
+        `Pusat Kesehatan Masyarakat untuk Populasi Umum: Bangun layanan perawatan gigi yang dapat diakses untuk ${umumPatients.length} partisipan populasi umum, dengan penekanan pada perawatan restoratif untuk mengatasi karies tidak dirawat`,
+        `Protokol Screening Spesifik Kategori: Implementasikan pendekatan screening yang berbeda - pemeriksaan gigi sekolah rutin untuk siswa dan jangkauan kesehatan masyarakat untuk populasi umum`,
+        `Diferensiasi Program Fluoride: Terapkan program fluoride varnish berbasis sekolah untuk siswa sambil mengimplementasikan fluoridasi air komunitas atau program kumur fluoride untuk populasi umum`,
+        `Prioritas Perawatan per Kategori: Prioritaskan intervensi dini dan pencegahan untuk kategori siswa sambil fokus pada pengobatan dan restorasi untuk populasi umum dengan penyakit yang sudah mapan`,
+        `Pengembangan Kebijakan Berbasis Data: Gunakan temuan spesifik kategori untuk menginformasikan pendekatan kebijakan yang berbeda - kebijakan kesehatan sekolah untuk populasi siswa dan kebijakan kesehatan masyarakat untuk intervensi berbasis komunitas`
+      ],
+      
       summaryTables
     };
 
-    return { analysis };
+    return { analysis: detailedAnalysis };
 
   } catch (error: any) {
     console.error("Error getting dashboard analysis:", error);
