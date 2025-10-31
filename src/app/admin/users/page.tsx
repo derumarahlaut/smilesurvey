@@ -1,17 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/auth-context';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, User, Shield } from 'lucide-react';
-import { ProtectedRoute } from '@/components/protected-route';
+import { useAuth } from '../../../contexts/auth-context';
 
 interface CustomAccount {
   id: string;
@@ -31,9 +21,9 @@ const DEFAULT_ACCOUNTS = [
 ];
 
 export default function AdminUsersPage() {
-  const { user } = useAuth();
+  const { user, isAdmin, isAuthenticated } = useAuth();
   const [customAccounts, setCustomAccounts] = useState<CustomAccount[]>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<CustomAccount | null>(null);
   const [formData, setFormData] = useState({
     username: '',
@@ -43,6 +33,29 @@ export default function AdminUsersPage() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Check authentication and admin rights
+  if (!isAuthenticated()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Login Required</h1>
+          <p className="text-gray-600">Please login to access this page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600">You don't have admin access.</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     loadCustomAccounts();
@@ -70,7 +83,7 @@ export default function AdminUsersPage() {
     setSuccess('');
 
     if (!formData.username || !formData.password || !formData.name) {
-      setError('Semua field harus diisi');
+      setError('All fields are required');
       return;
     }
 
@@ -81,19 +94,17 @@ export default function AdminUsersPage() {
     );
 
     if (existingAccount) {
-      setError('Username sudah digunakan');
+      setError('Username already exists');
       return;
     }
 
     if (editingAccount) {
       // Update existing account
       const updatedAccounts = customAccounts.map(acc =>
-        acc.id === editingAccount.id
-          ? { ...acc, ...formData }
-          : acc
+        acc.id === editingAccount.id ? { ...acc, ...formData } : acc
       );
       saveCustomAccounts(updatedAccounts);
-      setSuccess('Akun berhasil diperbarui');
+      setSuccess('Account updated successfully');
     } else {
       // Create new account
       const newAccount: CustomAccount = {
@@ -101,12 +112,12 @@ export default function AdminUsersPage() {
         ...formData
       };
       saveCustomAccounts([...customAccounts, newAccount]);
-      setSuccess('Akun berhasil dibuat');
+      setSuccess('Account created successfully');
     }
 
     setFormData({ username: '', password: '', name: '', role: 'operator' });
     setEditingAccount(null);
-    setIsCreateDialogOpen(false);
+    setIsCreateFormOpen(false);
   };
 
   const handleEdit = (account: CustomAccount) => {
@@ -117,14 +128,14 @@ export default function AdminUsersPage() {
       role: account.role
     });
     setEditingAccount(account);
-    setIsCreateDialogOpen(true);
+    setIsCreateFormOpen(true);
   };
 
   const handleDelete = (accountId: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
+    if (confirm('Are you sure you want to delete this account?')) {
       const updatedAccounts = customAccounts.filter(acc => acc.id !== accountId);
       saveCustomAccounts(updatedAccounts);
-      setSuccess('Akun berhasil dihapus');
+      setSuccess('Account deleted successfully');
     }
   };
 
@@ -132,207 +143,216 @@ export default function AdminUsersPage() {
     setFormData({ username: '', password: '', name: '', role: 'operator' });
     setEditingAccount(null);
     setError('');
+    setIsCreateFormOpen(false);
   };
 
   return (
-    <ProtectedRoute requireAdmin>
-      <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 px-4">
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Manajemen Pengguna</h1>
-            <p className="text-gray-600">Kelola akun operator dan administrator</p>
+            <h1 className="text-3xl font-bold">User Management</h1>
+            <p className="text-gray-600">Manage operator and administrator accounts</p>
           </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-            setIsCreateDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Tambah Akun
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingAccount ? 'Edit Akun' : 'Tambah Akun Baru'}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingAccount ? 'Perbarui informasi akun' : 'Buat akun operator atau admin baru'}
-                </DialogDescription>
-              </DialogHeader>
+          <button
+            onClick={() => setIsCreateFormOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Add Account
+          </button>
+        </div>
+
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+            {success}
+          </div>
+        )}
+
+        {/* Create/Edit Form */}
+        {isCreateFormOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">
+                {editingAccount ? 'Edit Account' : 'Add New Account'}
+              </h2>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Username
+                  </label>
+                  <input
+                    type="text"
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    placeholder="Masukkan username"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <input
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    placeholder="Masukkan password"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nama Lengkap</Label>
-                  <Input
-                    id="name"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Masukkan nama lengkap"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Role
+                  </label>
                   <select
-                    id="role"
                     value={formData.role}
                     onChange={(e) => setFormData({...formData, role: e.target.value as 'admin' | 'operator'})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
                   >
                     <option value="operator">Operator</option>
                     <option value="admin">Administrator</option>
                   </select>
                 </div>
                 {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    {error}
+                  </div>
                 )}
                 <div className="flex gap-2">
-                  <Button type="submit" className="flex-1">
-                    {editingAccount ? 'Perbarui' : 'Buat Akun'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={resetForm}>
-                    Batal
-                  </Button>
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
+                  >
+                    {editingAccount ? 'Update' : 'Create'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {success && (
-          <Alert className="mb-6">
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
+            </div>
+          </div>
         )}
 
         <div className="grid gap-6">
           {/* Default Accounts */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Akun Default</CardTitle>
-              <CardDescription>Akun bawaan sistem yang tidak dapat dihapus</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {DEFAULT_ACCOUNTS.map((account) => (
-                    <TableRow key={account.id}>
-                      <TableCell className="font-medium">{account.username}</TableCell>
-                      <TableCell>{account.name}</TableCell>
-                      <TableCell>
-                        <Badge variant={account.role === 'admin' ? 'default' : 'secondary'}>
-                          {account.role === 'admin' ? (
-                            <><Shield className="w-3 h-3 mr-1" /> Admin</>
-                          ) : (
-                            <><User className="w-3 h-3 mr-1" /> Operator</>
-                          )}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">Default</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-semibold">Default Accounts</h2>
+              <p className="text-gray-600">Built-in system accounts that cannot be deleted</p>
+            </div>
+            <div className="p-6">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2">Username</th>
+                      <th className="text-left py-2">Name</th>
+                      <th className="text-left py-2">Role</th>
+                      <th className="text-left py-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {DEFAULT_ACCOUNTS.map((account) => (
+                      <tr key={account.id} className="border-b">
+                        <td className="py-2 font-medium">{account.username}</td>
+                        <td className="py-2">{account.name}</td>
+                        <td className="py-2">
+                          <span className={`px-2 py-1 rounded text-sm ${
+                            account.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {account.role}
+                          </span>
+                        </td>
+                        <td className="py-2">
+                          <span className="px-2 py-1 rounded text-sm bg-green-100 text-green-800">
+                            Default
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
 
           {/* Custom Accounts */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Akun Custom</CardTitle>
-              <CardDescription>Akun yang dibuat oleh administrator</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-semibold">Custom Accounts</h2>
+              <p className="text-gray-600">Accounts created by administrators</p>
+            </div>
+            <div className="p-6">
               {customAccounts.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Belum ada akun custom yang dibuat</p>
+                  <p className="text-gray-500">No custom accounts created yet</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Nama</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {customAccounts.map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell className="font-medium">{account.username}</TableCell>
-                        <TableCell>{account.name}</TableCell>
-                        <TableCell>
-                          <Badge variant={account.role === 'admin' ? 'default' : 'secondary'}>
-                            {account.role === 'admin' ? (
-                              <><Shield className="w-3 h-3 mr-1" /> Admin</>
-                            ) : (
-                              <><User className="w-3 h-3 mr-1" /> Operator</>
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(account)}
-                            >
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDelete(account.id)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2">Username</th>
+                        <th className="text-left py-2">Name</th>
+                        <th className="text-left py-2">Role</th>
+                        <th className="text-left py-2">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customAccounts.map((account) => (
+                        <tr key={account.id} className="border-b">
+                          <td className="py-2 font-medium">{account.username}</td>
+                          <td className="py-2">{account.name}</td>
+                          <td className="py-2">
+                            <span className={`px-2 py-1 rounded text-sm ${
+                              account.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {account.role}
+                            </span>
+                          </td>
+                          <td className="py-2">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEdit(account)}
+                                className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-sm hover:bg-yellow-200"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(account.id)}
+                                className="px-3 py-1 bg-red-100 text-red-800 rounded text-sm hover:bg-red-200"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }
