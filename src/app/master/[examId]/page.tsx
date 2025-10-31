@@ -2,31 +2,110 @@
 
 'use client';
 
-import { getPatient, verifyPatient } from '@/app/actions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getPatient, verifyPatient } from '../../actions';
 import { AlertTriangle, ArrowLeft, Pencil, CheckCircle, ShieldQuestion } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Separator } from '@/components/ui/separator';
-import { allQuestions } from '@/lib/survey-data';
+import { allQuestions } from '../../../lib/survey-data';
 import { useEffect, useState, useCallback } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
 import { useParams } from 'next/navigation';
-import { OdontogramDisplay } from '@/components/odontogram-display';
+
+// Simple UI components to replace the UI library
+const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
+    {children}
+  </div>
+);
+
+const CardHeader = ({ children }: { children: React.ReactNode }) => (
+  <div className="p-6 pb-3">
+    {children}
+  </div>
+);
+
+const CardTitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <h3 className={`text-lg font-semibold leading-none tracking-tight ${className}`}>
+    {children}
+  </h3>
+);
+
+const CardDescription = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-sm text-gray-600 mt-2">
+    {children}
+  </p>
+);
+
+const CardContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`p-6 pt-3 ${className}`}>
+    {children}
+  </div>
+);
+
+const CardFooter = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`p-6 pt-3 ${className}`}>
+    {children}
+  </div>
+);
+
+const Alert = ({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "destructive" }) => (
+  <div className={`relative w-full rounded-lg border p-4 ${variant === "destructive" ? "border-red-200 bg-red-50" : "border-gray-200 bg-gray-50"}`}>
+    {children}
+  </div>
+);
+
+const AlertTitle = ({ children }: { children: React.ReactNode }) => (
+  <h5 className="mb-1 font-medium leading-none tracking-tight">
+    {children}
+  </h5>
+);
+
+const AlertDescription = ({ children }: { children: React.ReactNode }) => (
+  <div className="text-sm text-gray-600">
+    {children}
+  </div>
+);
+
+const Button = ({ 
+  children, 
+  onClick, 
+  disabled = false, 
+  variant = "primary", 
+  className = "" 
+}: { 
+  children: React.ReactNode; 
+  onClick?: () => void; 
+  disabled?: boolean;
+  variant?: "primary" | "secondary" | "outline";
+  className?: string;
+}) => {
+  const baseClasses = "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50";
+  
+  const variants = {
+    primary: "bg-blue-600 text-white hover:bg-blue-700",
+    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
+    outline: "border border-gray-300 bg-white hover:bg-gray-50"
+  };
+  
+  return (
+    <button
+      className={`${baseClasses} ${variants[variant]} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Separator = ({ className = "" }: { className?: string }) => (
+  <hr className={`border-gray-200 ${className}`} />
+);
+
+// Simple Odontogram Display component
+const OdontogramDisplay = ({ patientData }: { patientData: any }) => (
+  <div className="bg-gray-50 rounded-lg p-4 text-center">
+    <p className="text-gray-600">Odontogram visualization akan ditampilkan di sini</p>
+  </div>
+);
 
 const toothStatusCodeMap: Record<string, string> = {
     // Gigi Tetap
@@ -64,15 +143,11 @@ const getLabel = (key: string) => allQuestions.find(q => q.id === key)?.question
 const VerificationDialog = ({ examId, patient, onVerifySuccess }: { examId: string, patient: any, onVerifySuccess: () => void }) => {
     const [verifierName, setVerifierName] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
-    const { toast } = useToast();
+    const [showDialog, setShowDialog] = useState(false);
 
     const handleVerify = async () => {
         if (!verifierName.trim()) {
-            toast({
-                title: 'Nama Verifikator Kosong',
-                description: 'Mohon isi nama Anda untuk melanjutkan verifikasi.',
-                variant: 'destructive',
-            });
+            alert('Mohon isi nama Anda untuk melanjutkan verifikasi.');
             return;
         }
         setIsVerifying(true);
@@ -80,52 +155,52 @@ const VerificationDialog = ({ examId, patient, onVerifySuccess }: { examId: stri
         setIsVerifying(false);
 
         if (result.error) {
-            toast({
-                title: 'Gagal Memverifikasi',
-                description: result.error,
-                variant: 'destructive',
-            });
+            alert(`Gagal Memverifikasi: ${result.error}`);
         } else {
-            toast({
-                title: 'Verifikasi Berhasil',
-                description: `Data pasien ${examId} telah diverifikasi oleh ${verifierName}.`,
-            });
+            alert(`Verifikasi Berhasil: Data pasien ${examId} telah diverifikasi oleh ${verifierName}.`);
+            setShowDialog(false);
             onVerifySuccess();
         }
     };
 
+    if (!showDialog) {
+        return (
+            <Button variant="secondary" onClick={() => setShowDialog(true)}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Verifikasi Data
+            </Button>
+        );
+    }
+
     return (
-        <AlertDialog>
-            <AlertDialogTrigger asChild>
-                <Button variant="secondary">
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Verifikasi Data
-                </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Konfirmasi Verifikasi Data</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Dengan ini Anda menyatakan bahwa data yang diinput untuk pasien {examId} sudah benar dan valid.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="space-y-2">
-                    <Label htmlFor="verifierName">Nama Verifikator</Label>
-                    <Input
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 className="text-lg font-semibold mb-2">Konfirmasi Verifikasi Data</h3>
+                <p className="text-gray-600 mb-4">
+                    Dengan ini Anda menyatakan bahwa data yang diinput untuk pasien {examId} sudah benar dan valid.
+                </p>
+                <div className="space-y-2 mb-4">
+                    <label htmlFor="verifierName" className="block text-sm font-medium text-gray-700">
+                        Nama Verifikator
+                    </label>
+                    <input
                         id="verifierName"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={verifierName}
                         onChange={(e) => setVerifierName(e.target.value)}
                         placeholder="Masukkan nama lengkap Anda..."
                     />
                 </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleVerify} disabled={isVerifying}>
+                <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowDialog(false)}>
+                        Batal
+                    </Button>
+                    <Button onClick={handleVerify} disabled={isVerifying}>
                         {isVerifying ? 'Memverifikasi...' : 'Ya, Verifikasi'}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </div>
+            </div>
+        </div>
     );
 };
 
