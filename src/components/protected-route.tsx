@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from '@/contexts/auth-context';
-import { LoginForm } from '@/components/login-form';
+import { useAuth } from '../contexts/auth-context';
+import { LoginForm } from './login-form';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
